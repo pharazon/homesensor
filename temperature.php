@@ -131,6 +131,17 @@ class GNUPlot {
         $this->termcommand = "set term $this->format size $this->width,$this->height\n";
     }
 
+    function getTerm($req = 'array') {
+        if ($req == 'array')
+            return array("format" => $this->format, "width" => $this->width, "height" => $this->height);
+        if ($req == 'format')
+            return $this->format;    
+        if ($req == 'width')
+            return $this->width;    
+        if ($req == 'height')
+            return $this->height;    
+    } 
+
     function plotData(  &$PGData, $method, $using, $axis='', $extra='' ) { 
         /** 
          * This function is for 2D plotting 
@@ -234,12 +245,8 @@ class Temperature extends PGData
         global $tempDir;
         $this->filename = tempnam($tempDir, "temperaturedata");
         $this->sensorid = $sensorid;
-        if ($end == "now") $this->endTime = new DateTime("now");
-        if ($start < 0)
-        {
-            $this->startTime = new DateTime("now");
-            $this->startTime->modify(-$start." hour ago");
-        }
+        $this->setEndTime($end);
+        $this->setStartTime($start);
         $this->runQuery();
     }
 
@@ -290,25 +297,49 @@ class Temperature extends PGData
     function getSampleCount() { return $this->count; }
     function getMin() { return $this->min; }
     function getMax() { return $this->max; }
-    //function setStartTime()
-    //function setEndTime()
+    function setStartTime($start) {
+        if ($start < 0)
+        {
+            $this->startTime = new DateTime("now");
+            $this->startTime->modify(-$start." hour ago");
+        }
+
+    }
+
+    function setEndTime($end) {
+        if ($end == "now") $this->endTime = new DateTime("now");
+    }
+
     function getStartTime($format='Y-m-d H:i:s') { return $this->startTime->format($format); }
     function getEndTime($format='Y-m-d H:i:s') { return $this->endTime->format($format); }
     function getName() { return $this->name; }
+
+    function getDataArray()
+    {
+        return (array('avg' => $this->getAvg(),
+                      'min' => $this->getMin(),
+                      'max' => $this->getMax(),
+                      'startTime' => $this->getStartTime(),
+                      'endTime' => $this->getEndTime(),
+                      'name' => $this->getName(),
+                      'sampleCount' => $this->getSampleCount() ));
+    }
 
 }
 
 
 class TemperatureGraph extends GNUPlot
 {
+    var $data;
     var $linewidth = 2;
     var $smooth = 'smooth csplines';
+    var $dataFormat = 'json';
     
     function __construct()
     {
         parent::__construct();
         $this->exe("set timefmt \"%Y-%m-%d %H:%M:%S\"\n");
-        $this->exe("set format x \"%d.%m\\n%H:%M\"\n");
+        $this->exe("set format x \"%d.%m %H:%M\"\n");
         $this->exe("set xdata time\n");
         $this->exe("set grid xtics 0\n");
         $this->exe("set grid ytics 0\n");
@@ -316,6 +347,7 @@ class TemperatureGraph extends GNUPlot
 
     function addTemperatureData($data)
     {
+        $this->data[] = $data;
         $this->plotData($data, 'lines', '1:3', '', "$this->smooth lw $this->linewidth" ); 
     }
 
@@ -324,9 +356,14 @@ class TemperatureGraph extends GNUPlot
         $this->linewidth = $width;
     }
 
-    function setFormat($format)
+    function setImageFormat($format)
     {
         $this->setTerm($format);
+    }
+
+    function setDataFormat($format)
+    {
+        $this->dataFormat = $format;
     }
 
     function setSmooth($bool)
@@ -346,6 +383,25 @@ class TemperatureGraph extends GNUPlot
         $string = file_get_contents($filename);
         unlink($filename);
         return $string;
+    }
+
+    function getDataArray()
+    {
+        foreach ($this->data as $data)
+        {
+            $dataArray[] = $data->getDataArray();
+        }
+        
+        $format = $this->getTerm('format');
+
+        $array = array('graphImage' => $this->getData(), 'format' => 'svg', 'data' => $dataArray);
+
+        return $array;
+    }
+
+    function getJSONData()
+    {
+        return json_encode($this->getDataArray());
     }
 
     function saveGraphFile($filename)
