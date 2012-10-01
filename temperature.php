@@ -303,11 +303,22 @@ class Temperature extends PGData
             $this->startTime = new DateTime("now");
             $this->startTime->modify(-$start." hour ago");
         }
+        else
+        {
+            $this->startTime = $start;
+        }
 
     }
 
     function setEndTime($end) {
-        if ($end == "now") $this->endTime = new DateTime("now");
+        if ($end == "now")
+        {
+            $this->endTime = new DateTime("now");
+        }
+        else
+        {
+            $this->endTime = $end;
+        }
     }
 
     function getStartTime($format='Y-m-d H:i:s') { return $this->startTime->format($format); }
