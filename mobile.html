@@ -1,0 +1,118 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+    <title>Lämpötila</title> 
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 	
+    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0-rc.2/jquery.mobile-1.2.0-rc.2.min.css" />
+    <script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+    <script src="http://code.jquery.com/mobile/1.2.0-rc.2/jquery.mobile-1.2.0-rc.2.min.js"></script>
+</head> 
+<body> 
+
+<div data-role="page" id="mainPage">
+
+    <div data-role="header">
+        <h1>Lämpötila</h1>
+    </div><!-- /header -->
+
+
+    <div data-role="content">	
+        <ul data-role="listview" id="sensorlist">
+        </ul>
+    </div>
+
+<!--    <div data-role="fieldcontain">
+        <fieldset data-role="controlgroup" id="sensorlist">
+        </fieldset>
+    </div>
+-->
+    <div data-role="footer" class="ui-bar">
+    	<a href="#graphPage" data-role="button" data-icon="arrow-r" id="graphButton">Katso</a>
+    </div>
+
+
+</div><!-- /page -->
+
+<div data-role="page" id="graphPage">
+
+    <div data-role="header">
+        <h1>Lämpötila</h1>
+    </div><!-- /header -->
+
+    <div data-role="content">
+        <img id="graphContent" src="graph.php">
+    </div>
+
+    <div data-role="footer" class="ui-bar">
+    	<a href="#mainPage" data-role="button" data-icon="arrow-l">Takaisin</a>
+    </div>
+
+
+</div><!-- /page -->
+
+
+<script>
+//$( document ).delegate("#mainPage", "pageinit", function() {
+//});
+
+var sersordata;
+var selected_index = [];
+$(document).ready(function() {
+    checkboxRefresh();
+    
+    $("#sensorlist").on("click", ' > li', function(event) {
+        if (selected_index[$(this).index()] == true) {
+            selected_index[$(this).index()] = false;
+            $(this).removeClass("ui-btn-up-b");
+            $(this).removeClass("ui-btn-hover-b");
+            $(this).addClass("ui-btn-up-a");
+            $(this).attr("data-theme", "a");
+        }
+        else {
+            selected_index[$(this).index()] = true;
+            $(this).removeClass("ui-btn-up-a");
+            $(this).removeClass("ui-btn-hover-a");
+            $(this).addClass("ui-btn-up-b");
+            $(this).attr("data-theme", "b");
+        }
+    });
+    
+    $("#graphButton").on("click", function(event) {
+        graphRefresh(buildGraphQuery(sensordata, selected_index));
+    });
+
+});
+
+function checkboxRefresh(){
+    $.getJSON('sensor.php', function(data) {
+        var items = [];
+        var items2 = [];
+        $.each(data, function(i,sensor) {
+            items2.push('<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#>' + sensor.name +" " + sensor.value + '</a></li>');
+            items.push('<input type="checkbox" name="checkbox-'+sensor.id+'" id="checkbox-'+sensor.id+'"class="custom" /><label for="checkbox-'+sensor.id+'">'+sensor.name+' '+sensor.value+'</label>');
+        });
+        document.getElementById("sensorlist").innerHTML= items2.join('');
+        $("#sensorlist").listview("refresh");
+        sensordata = data;
+    });
+}
+
+function graphRefresh(query) {
+    $("#graphContent").attr("src", query);
+}
+
+
+function buildGraphQuery(sensors, selected) {
+    var graphQuery = "graph.php?format=json&fullscreen=1&";
+    $.each(sensors, function(i, sensor){
+        if (selected[i] == true)
+            graphQuery = graphQuery+'sensor[]='+sensor.id+'&';
+    });
+    return graphQuery;
+}
+</script>
+
+</body>
+</html>
+
