@@ -37,6 +37,7 @@
 <div data-role="page" id="graphPage">
 
     <div data-role="header">
+    	<a href="#mainPage" data-role="button" data-icon="arrow-l">Takaisin</a>
         <h1>Lämpötila</h1>
     </div><!-- /header -->
 
@@ -45,7 +46,12 @@
     </div>
 
     <div data-role="footer" class="ui-bar">
-    	<a href="#mainPage" data-role="button" data-icon="arrow-l">Takaisin</a>
+    	<select name="hours" id="timeSelect">
+            <option value="12">12 tuntia</option>
+            <option selected value="24">1 päivä</option>
+            <option value="72">3 päivää</option>
+            <option value="168">1 viikko</option>
+        </select>
     </div>
 
 
@@ -78,6 +84,10 @@ $(document).ready(function() {
         }
     });
     
+    $("#timeSelect").change(function () {
+        graphRefresh(buildGraphQuery(sensordata, selected_index));
+    });
+
     $("#graphButton").on("click", function(event) {
         graphRefresh(buildGraphQuery(sensordata, selected_index));
     });
@@ -109,6 +119,10 @@ function buildGraphQuery(sensors, selected) {
         if (selected[i] == true)
             graphQuery = graphQuery+'sensor[]='+sensor.id+'&';
     });
+
+    hours = $("#timeSelect option:selected").attr("value")
+    graphQuery = graphQuery+'hours='+hours+'&';
+
     return graphQuery;
 }
 </script>
