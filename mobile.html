@@ -13,6 +13,7 @@
 <div data-role="page" id="mainPage">
 
     <div data-role="header">
+        <a href="#" data-role="button" data-icon="refresh" id="refreshButton">Päivitä</a>
         <h1>Lämpötila</h1>
     </div><!-- /header -->
 
@@ -90,6 +91,10 @@ $(document).ready(function() {
 
     $("#graphButton").on("click", function(event) {
         graphRefresh(buildGraphQuery(sensordata, selected_index));
+    });
+
+    $("#refreshButton").on("click", function(event) {
+        checkboxRefresh();
     });
 
 });
