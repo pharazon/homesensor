@@ -36,7 +36,7 @@
 
 <div data-role="page" id="graphPage">
 
-    <div data-role="header">
+    <div data-role="header" id="header">
     	<a href="#mainPage" data-role="button" data-icon="arrow-l">Takaisin</a>
         <h1>Lämpötila</h1>
     </div><!-- /header -->
@@ -45,7 +45,7 @@
         <img id="graphImage" src="graph.php">
     </div>
 
-    <div data-role="footer" class="ui-bar">
+    <div data-role="footer" class="ui-bar" id="footer">
     	<select name="hours" id="timeSelect">
             <option value="12">12 tuntia</option>
             <option selected value="24">1 päivä</option>
@@ -82,7 +82,11 @@ jQuery.extend(jQuery.mobile.datebox.prototype.options, {
 
 var sersordata;
 var selected_index = [];
-$(document).bind("pageinit", function(event) {
+var imageHeight;
+var imageWidth;
+//$(document).bind("pageinit", function(event) {
+
+
     checkboxRefresh();
     
     $("#sensorlist").on("click", ' > li', function(event) {
@@ -111,7 +115,7 @@ $(document).bind("pageinit", function(event) {
     });
 
     $("#graphButton").on("click", function(event) {
-        graphRefresh(buildGraphQuery(sensordata, selected_index));
+        //graphRefresh(buildGraphQuery(sensordata, selected_index));
     });
 
     $("#refreshButton").on("click", function(event) {
@@ -120,12 +124,19 @@ $(document).bind("pageinit", function(event) {
     });
     
     $("#dateDialogCloseButton").on("click", function(event) {
-        graphRefresh(buildGraphQuery(sensordata, selected_index));
+        //graphRefresh(buildGraphQuery(sensordata, selected_index));
     });
     
     $("#graphImage").load(function() {
         $.mobile.loading( 'hide' );
     });
+//});
+$("#graphPage").on("pageshow", function(event) {
+    graphRefresh(buildGraphQuery(sensordata, selected_index));
+});
+
+$("#graphPage").on("orientationchange", function(event) {
+    graphRefresh(buildGraphQuery(sensordata, selected_index));
 });
 
 function parseDate(datestring) {
@@ -158,6 +169,8 @@ function graphRefresh(query) {
 
 
 function buildGraphQuery(sensors, selected) {
+    imageHeight = $(window).height() - $("#header").height() - $("#footer").height() - 50;
+    imageWidth = $(window).width();
     var graphQuery = "graph.php?fullscreen=1&";
     $.each(sensors, function(i, sensor){
         if (selected[i] == true)
@@ -176,6 +189,7 @@ function buildGraphQuery(sensors, selected) {
         graphQuery = graphQuery+'hours='+hours+'&';
     }
 
+    graphQuery = graphQuery+'width='+imageWidth+'&height='+imageHeight+'&';
     return graphQuery;
 }
 </script>
