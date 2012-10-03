@@ -119,9 +119,18 @@ $(document).bind("pageinit", function(event) {
     });
     
     $("#dateDialogCloseButton").on("click", function(event) {
-        
+        graphRefresh(buildGraphQuery(sensordata, selected_index));
     });
 });
+
+function parseDate(datestring) {
+    var datearray = datestring.split(".");
+    var date = new Date();
+    date.setFullYear(datearray[2]);
+    date.setMonth(datearray[1]);
+    date.setDate(datearray[0]);
+    return date;
+}
 
 function checkboxRefresh(){
     $.getJSON('sensor.php', function(data) {
@@ -149,8 +158,17 @@ function buildGraphQuery(sensors, selected) {
             graphQuery = graphQuery+'sensor[]='+sensor.id+'&';
     });
 
-    hours = $("#timeSelect option:selected").attr("value")
-    graphQuery = graphQuery+'hours='+hours+'&';
+    var hours = $("#timeSelect option:selected").attr("value")
+    if (hours == "custom") {
+        var startDate = parseDate($("#startDate").val());
+        var endDate = parseDate($("#endDate").val());
+        endDate.setDate(endDate.getDate()+1);
+        var startDateString = ''+startDate.getFullYear()+'-'+startDate.getMonth()+'-'+startDate.getDate()+'-00-00-00';
+        var endDateString = ''+endDate.getFullYear()+'-'+endDate.getMonth()+'-'+endDate.getDate()+'-00-00-00';
+        graphQuery = graphQuery+'dateStart='+startDateString+'&dateEnd='+endDateString+'&';
+    } else {
+        graphQuery = graphQuery+'hours='+hours+'&';
+    }
 
     return graphQuery;
 }

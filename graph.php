@@ -21,9 +21,9 @@ foreach ($sensor as $id) {
     if (!$dateStart && !$dateEnd)
         $sensorData[] = new Temperature($id, -$hours, 'now');
     else {
-        $dateStart = date_create_from_format('Y-m-d-H-i-s', $dateStart);
-        $dateEnd   = date_create_from_format('Y-m-d-H-i-s', $dateEnd);
-        $sensorData[] = new Temperature($id, $dateStart, $dateEnd);
+        $_dateStart = date_create_from_format('Y-m-d-H-i-s', $dateStart);
+        $_dateEnd   = date_create_from_format('Y-m-d-H-i-s', $dateEnd);
+        $sensorData[] = new Temperature($id, $_dateStart, $_dateEnd);
     }
 }
 
