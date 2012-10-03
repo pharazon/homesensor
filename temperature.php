@@ -350,7 +350,7 @@ class TemperatureGraph extends GNUPlot
     {
         parent::__construct();
         $this->exe("set timefmt \"%Y-%m-%d %H:%M:%S\"\n");
-        $this->exe("set format x \"%d.%m %H:%M\"\n");
+        $this->exe("set format x \"%d.%m\\\\n%H:%M\"\n");
         $this->exe("set xdata time\n");
         $this->exe("set grid xtics 0\n");
         $this->exe("set grid ytics 0\n");
