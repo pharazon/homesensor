@@ -42,7 +42,7 @@
     </div><!-- /header -->
 
     <div data-role="content">
-        <img id="graphContent" src="graph.php">
+        <img id="graphImage" src="graph.php">
     </div>
 
     <div data-role="footer" class="ui-bar">
@@ -122,6 +122,10 @@ $(document).bind("pageinit", function(event) {
     $("#dateDialogCloseButton").on("click", function(event) {
         graphRefresh(buildGraphQuery(sensordata, selected_index));
     });
+    
+    $("#graphImage").load(function() {
+        $.mobile.loading( 'hide' );
+    });
 });
 
 function parseDate(datestring) {
@@ -148,7 +152,8 @@ function checkboxRefresh(){
 }
 
 function graphRefresh(query) {
-    $("#graphContent").attr("src", query);
+    $.mobile.loading( 'show' );
+    $("#graphImage").attr("src", query);
 }
 
 
