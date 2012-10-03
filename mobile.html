@@ -17,7 +17,7 @@
 
 <div data-role="page" id="mainPage">
 
-    <div data-role="header">
+    <div data-role="header" data-position="fixed">
         <a href="#" data-role="button" data-icon="refresh" id="refreshButton">Päivitä</a>
         <h1>Lämpötila</h1>
     </div><!-- /header -->
@@ -27,7 +27,7 @@
         </ul>
     </div>
 
-    <div data-role="footer" class="ui-bar">
+    <div data-role="footer" class="ui-bar" data-position="fixed">
     	<a href="#graphPage" data-role="button" data-icon="arrow-r" id="graphButton">Katso</a>
     </div>
 
@@ -36,7 +36,7 @@
 
 <div data-role="page" id="graphPage">
 
-    <div data-role="header" id="header">
+    <div data-role="header" id="header" data-position="fixed">
     	<a href="#mainPage" data-role="button" data-icon="arrow-l">Takaisin</a>
         <h1>Lämpötila</h1>
     </div><!-- /header -->
@@ -45,7 +45,7 @@
         <img id="graphImage" src="graph.php">
     </div>
 
-    <div data-role="footer" class="ui-bar" id="footer">
+    <div data-role="footer" class="ui-bar" id="footer" data-position="fixed">
     	<select name="hours" id="timeSelect">
             <option value="12">12 tuntia</option>
             <option selected value="24">1 päivä</option>
