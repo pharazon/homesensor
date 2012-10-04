@@ -1,7 +1,7 @@
 <?
 require "temperature.php";
 
-$selectRequestVariables = array("hours","sensor","width","height", "fullscreen", "dataFormat", "imageFormat");
+$selectRequestVariables = array("hours","sensor","width","height", "fullscreen", "dataFormat", "imageFormat", "dateStart", "dateEnd");
 foreach($selectRequestVariables as $selectRequestVar) {
     eval('$GLOBALS["'.$selectRequestVar.'"] = $'.
         $selectRequestVar.' = isset($_REQUEST["'.
@@ -18,7 +18,13 @@ if (!$height) $height = 480;
 if ($fullscreen == "") $fullscreen = false;
 
 foreach ($sensor as $id) {
-    $sensorData[] = new Temperature($id, -$hours, 'now');
+    if (!$dateStart && !$dateEnd)
+        $sensorData[] = new Temperature($id, -$hours, 'now');
+    else {
+        $_dateStart = date_create_from_format('Y-m-d-H-i-s', $dateStart);
+        $_dateEnd   = date_create_from_format('Y-m-d-H-i-s', $dateEnd);
+        $sensorData[] = new Temperature($id, $_dateStart, $_dateEnd);
+    }
 }
 
 $graph = new TemperatureGraph();
