@@ -42,7 +42,10 @@
     </div><!-- /header -->
 
     <div data-role="content">
-        <img id="graphImage" src="graph.php">
+        <div id="graphImage"></div>
+        <div id="graphStats">
+            <ul data-role="listview" id="sensorStatView"></ul>
+        </div>
     </div>
 
     <div data-role="footer" class="ui-bar" id="footer" data-position="fixed">
@@ -84,10 +87,10 @@ var sersordata;
 var selected_index = [];
 var imageHeight;
 var imageWidth;
-//$(document).bind("pageinit", function(event) {
 
-
+$(document).bind("pageinit", function(event) {
     checkboxRefresh();
+});
     
     $("#sensorlist").on("click", ' > li', function(event) {
         if (selected_index[$(this).index()] == true) {
@@ -126,11 +129,7 @@ var imageWidth;
     $("#dateDialogCloseButton").on("click", function(event) {
         //graphRefresh(buildGraphQuery(sensordata, selected_index));
     });
-    
-    $("#graphImage").load(function() {
-        $.mobile.loading( 'hide' );
-    });
-//});
+
 $("#graphPage").on("pageshow", function(event) {
     graphRefresh(buildGraphQuery(sensordata, selected_index));
 });
@@ -149,29 +148,40 @@ function parseDate(datestring) {
 }
 
 function checkboxRefresh(){
+    $.mobile.loading( 'show' );
     $.getJSON('sensor.php', function(data) {
-        var items = [];
-        var items2 = [];
+        $('#sensorlist').empty();
         $.each(data, function(i,sensor) {
-            items2.push('<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#>' + sensor.name +" " + sensor.value + '</a></li>');
-            items.push('<input type="checkbox" name="checkbox-'+sensor.id+'" id="checkbox-'+sensor.id+'"class="custom" /><label for="checkbox-'+sensor.id+'">'+sensor.name+' '+sensor.value+'</label>');
-        });
-        document.getElementById("sensorlist").innerHTML= items2.join('');
+            item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#>' + sensor.name +" " + sensor.value + '</a></li>';
+            $('#sensorlist').append(item);
+        })
         $("#sensorlist").listview("refresh");
         sensordata = data;
+        $.mobile.loading( 'hide' );
     });
 }
 
 function graphRefresh(query) {
     $.mobile.loading( 'show' );
-    $("#graphImage").attr("src", query);
+    $.getJSON(query, function(sensors) {
+        $('#graphImage').empty();
+        $('#sensorStatView').empty();
+        $('#graphImage').append(sensors.graphImage);
+        $.each(sensors.data, function(i, data){
+          item = "<li><h3>"+data.name+"</h3><p>Keskiarvo: "+data.avg+"</p><p>Maksimi: "+data.max+"</p><p>Minimi: "+data.min+"</p></li>";
+          $('#sensorStatView').append(item);
+        });
+        
+        $('#sensorStatView').listview('refresh');
+        $.mobile.loading( 'hide' );
+    });
 }
 
 
 function buildGraphQuery(sensors, selected) {
     imageHeight = $(window).height() - $("#header").height() - $("#footer").height() - 50;
-    imageWidth = $(window).width();
-    var graphQuery = "graph.php?fullscreen=1&";
+    imageWidth = $(window).width() - 25;
+    var graphQuery = "graph.php?fullscreen=1&dataFormat=json&";
     $.each(sensors, function(i, sensor){
         if (selected[i] == true)
             graphQuery = graphQuery+'sensor[]='+sensor.id+'&';
