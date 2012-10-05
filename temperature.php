@@ -285,21 +285,30 @@ class Temperature extends PGData
          where Anturi = ".$this->sensor->id." 
          and Aika between '".$this->startTime->format('Y-m-d H:i:s')."'
          and '".$this->endTime->format('Y-m-d H:i:s')."'";
-        $result = mysql_query($query);
-        $this->count = mysql_num_rows($result);
 
-        /* Make simple downsampling to limit memory usage both on server and client */        
-        $div = floor($this->count/2000);
-        if ($div < 1) $div = 1;
-        for ($i=0; $i<$this->count; $i=$i+$div)
+        /* 
+        Use unbuffered_query to speed up large queries by not loading the whole
+        result to php side. Use temporary table to limit locking of database.
+        Also make simple downsampling to limit memory usage both on server and client.
+        */        
+        mysql_query ("CREATE TEMPORARY TABLE TempTable $query");
+        $this->count = mysql_affected_rows(); 
+        $result = mysql_unbuffered_query ('SELECT Aika, Lampotila FROM TempTable'); 
+        $skiprows = floor($this->count/2000);
+        if ($skiprows < 1) $skiprows = 1;
+        for ($currentrow=0,$selectedrow=0; $currentrow<$this->count; $currentrow++)
         {
-            mysql_data_seek($result, $i);
             $row = mysql_fetch_array($result);
-            $date = date_create_from_format('Y-m-d H:i:s', $row['Aika']);
-            $value = $row['Lampotila'];
-            $this->data[] = array($date, $value);
+            if ($currentrow == $selectedrow)
+            {
+                $date = date_create_from_format('Y-m-d H:i:s', $row['Aika']);
+                $value = $row['Lampotila'];
+                $this->data[] = array($date, $value);
+                $selectedrow = $selectedrow + $skiprows;
+            }
         }
         mysql_free_result($result);
+        mysql_query ('DROP TABLE TempTable'); 
 
         $query=
         "select AVG(Lampotila), MIN(Lampotila), MAX(Lampotila) from Mittaukset
