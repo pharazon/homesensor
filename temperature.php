@@ -124,6 +124,14 @@ class GNUPlot {
         $this->height = $y;
         $this->setTerm();
     }
+    
+    function getWidth() {
+        return $this->width;
+    }
+
+    function getHeight() {
+        return $this->height;
+    }
 
     function setTerm($format = '') {
         if ($format != '')
@@ -249,8 +257,9 @@ class Temperature extends PGData
     var $numRows;
     var $min;
     var $max;
-//    var $filename;
+    var $filename;
     var $count;
+    var $data;
     
     function __construct($sensor, $start, $end)
     {
@@ -260,6 +269,7 @@ class Temperature extends PGData
         $this->setEndTime($end);
         $this->setStartTime($start);
         $this->runQuery();
+        $this->writeDataFile();
     }
 
     function __destruct()
@@ -276,14 +286,19 @@ class Temperature extends PGData
          and Aika between '".$this->startTime->format('Y-m-d H:i:s')."'
          and '".$this->endTime->format('Y-m-d H:i:s')."'";
         $result = mysql_query($query);
-        $fp = fopen($this->filename, 'w');
-	if ($fp == FALSE) die("could not open file $this->filename\n");
-        while ($row = mysql_fetch_array($result))
-        {
-            fwrite($fp, $row['Aika']."\t".$row['Lampotila']."\n");
-        }
         $this->count = mysql_num_rows($result);
-        fclose($fp);
+
+        /* Make simple downsampling to limit memory usage both on server and client */        
+        $div = floor($this->count/2000);
+        if ($div < 1) $div = 1;
+        for ($i=0; $i<$this->count; $i=$i+$div)
+        {
+            mysql_data_seek($result, $i);
+            $row = mysql_fetch_array($result);
+            $date = date_create_from_format('Y-m-d H:i:s', $row['Aika']);
+            $value = $row['Lampotila'];
+            $this->data[] = array($date, $value);
+        }
         mysql_free_result($result);
 
         $query=
@@ -303,6 +318,35 @@ class Temperature extends PGData
         $row = mysql_fetch_array($result);
         $this->name = $row[0];
         mysql_free_result($result);
+    }
+
+    private function writeDataFile()
+    {
+        $this->filterSlidingAvg(5);
+        $fp = fopen($this->filename, 'w');
+    	if ($fp == FALSE) die("could not open file $this->filename\n");
+        foreach ($this->data as $data)
+        {
+            fwrite($fp, $data[0]->format("Y-m-d H:i:s")."\t".$data[1]."\n");
+        }
+        fclose($fp);
+        $this->data = array();
+    }
+
+    function filterSlidingAvg($num)
+    {
+        $sum = 0;
+        $newdata = $this->data;
+        for ($i=0; $i<count($this->data); $i++)
+        {
+            $sum = $sum + $this->data[$i][1];
+            if ($i >= $num)
+            {
+                $sum = $sum - $this->data[$i-$num][1];
+                $newdata[$i][1] = $sum/$num;
+            }
+        }
+        $this->data = $newdata;
     }
     
     function getAvg() { return $this->avg; }
@@ -355,7 +399,7 @@ class TemperatureGraph extends GNUPlot
 {
     var $data;
     var $linewidth = 2;
-    var $smooth = 'smooth csplines';
+    var $smooth = '';//'smooth csplines';
     var $dataFormat = 'json';
     
     function __construct()
@@ -370,6 +414,7 @@ class TemperatureGraph extends GNUPlot
 
     function addTemperatureData($data)
     {
+        $data->filterSlidingAvg(50);
         $this->data[] = $data;
         if (strcmp($data->sensor->type,"temperature") == 0) 
             $this->plotData($data, 'lines', '1:3', '', "$this->smooth lw $this->linewidth" );
