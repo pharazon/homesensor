@@ -252,14 +252,14 @@ class Temperature extends PGData
     var $dateformat = 'Y-m-d H:i:s';
     var $endTime;
     var $startTime;
-    var $sensor;
-    var $avg;    
+    var $sensor    = array();
+    var $avg       = 0;    
     var $numRows;
-    var $min;
-    var $max;
+    var $min       = 0;
+    var $max       = 0;
     var $filename;
-    var $count;
-    var $data;
+    var $count     = 0;
+    var $data      = array();
     
     function __construct($sensor, $start, $end)
     {
@@ -292,7 +292,7 @@ class Temperature extends PGData
         Also make simple downsampling to limit memory usage both on server and client.
         */        
         mysql_query ("CREATE TEMPORARY TABLE TempTable $query");
-        $this->count = mysql_affected_rows(); 
+        $this->count = mysql_affected_rows();
         $result = mysql_unbuffered_query ('SELECT Aika, Lampotila FROM TempTable'); 
         $skiprows = floor($this->count/2000);
         if ($skiprows < 1) $skiprows = 1;
@@ -423,8 +423,8 @@ class TemperatureGraph extends GNUPlot
 
     function addTemperatureData($data)
     {
-        $data->filterSlidingAvg(50);
         $this->data[] = $data;
+        if ($data->getSampleCount() == 0) return;
         if (strcmp($data->sensor->type,"temperature") == 0) 
             $this->plotData($data, 'lines', '1:3', '', "$this->smooth lw $this->linewidth" );
         elseif (strcmp($data->sensor->type,"power") == 0) {
