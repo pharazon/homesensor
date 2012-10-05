@@ -117,6 +117,10 @@ $(document).bind("pageinit", function(event) {
             graphRefresh(buildGraphQuery(sensordata, selected_index));
     });
 
+    $("#timeSelect").on("mouseover", function () {
+        document.getElementById('timeSelect').selectedIndex = -1;
+    });
+
     $("#graphButton").on("click", function(event) {
         //graphRefresh(buildGraphQuery(sensordata, selected_index));
     });
