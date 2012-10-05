@@ -113,11 +113,11 @@ $(document).bind("pageinit", function(event) {
         var selected = $("#timeSelect option:selected").attr("value");
         if (selected == "custom") {
             $.mobile.changePage('#timeDialog', 'pop', true, true);
-        } else
+        } else if (selected > 0)
             graphRefresh(buildGraphQuery(sensordata, selected_index));
     });
 
-    $("#timeSelect").on("mouseover", function () {
+    $("#timeSelect").on("click", function () {
         document.getElementById('timeSelect').selectedIndex = -1;
     });
 
@@ -192,7 +192,7 @@ function buildGraphQuery(sensors, selected) {
     });
 
     var hours = $("#timeSelect option:selected").attr("value")
-    if (hours == "custom") {
+    if (hours == "custom" || hours == undefined) {
         var startDate = parseDate($("#startDate").val());
         var endDate = parseDate($("#endDate").val());
         endDate.setDate(endDate.getDate()+1);
