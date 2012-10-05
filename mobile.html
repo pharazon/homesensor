@@ -152,7 +152,7 @@ function checkboxRefresh(){
     $.getJSON('sensor.php', function(data) {
         $('#sensorlist').empty();
         $.each(data, function(i,sensor) {
-            item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#>' + sensor.name +" " + sensor.value + '</a></li>';
+            item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#>' + sensor.name +" " + sensor.value +" "+ sensor.unit +'</a></li>';
             $('#sensorlist').append(item);
         })
         $("#sensorlist").listview("refresh");
@@ -168,7 +168,7 @@ function graphRefresh(query) {
         $('#sensorStatView').empty();
         $('#graphImage').append(sensors.graphImage);
         $.each(sensors.data, function(i, data){
-          item = "<li><h3>"+data.name+"</h3><p>Keskiarvo: "+data.avg+"</p><p>Maksimi: "+data.max+"</p><p>Minimi: "+data.min+"</p></li>";
+          item = "<li><h3>"+data.name+"</h3><p>Keskiarvo: "+data.avg+" "+ data.unit +"</p><p>Maksimi: "+data.max+" "+ data.unit +"</p><p>Minimi: "+data.min+" "+ data.unit +"</p></li>";
           $('#sensorStatView').append(item);
         });
         

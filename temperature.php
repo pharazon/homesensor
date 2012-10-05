@@ -213,20 +213,26 @@ class Sensor
     var $name;
     var $type;
     
-    function __construct($id, $name, $type)
+    function __construct($id, $name, $type, $unit, $value)
     {
         $this->id = $id;
         $this->name = $name;
         $this->type = $type;
+        $this->unit = $unit;
+        $this->value = $value;
     }
     
     static function get_sensor_array()
     {
-        $result = mysql_query("select Anturi, nimi, type from Anturit order by Anturi");
+        //select Anturit.Anturi,Anturit.nimi, Mittaukset.Lampotila from  Mittaukset inner join Anturit on Anturit.Anturi = Mittaukset.Anturi where Anturit.Anturi = 3 order by Mittaukset.Aika desc limit 1;
+        $result = mysql_query("select Anturi, nimi, type, unit from Anturit order by Anturi");
         $i = 0;
         while ($row = mysql_fetch_array($result))
         {
-            $sensors[$i] = new Sensor($row['Anturi'], $row['nimi'], $row['type']);
+            $q = mysql_query("select Lampotila from Mittaukset where Anturi =".$row['Anturi']." order by Aika desc limit 1");
+            $valrow = mysql_fetch_row($q);
+            mysql_free_result($q);
+            $sensors[$i] = new Sensor($row['Anturi'], $row['nimi'], $row['type'], $row['unit'], $valrow[0]);
             $i++;
         }
         mysql_free_result($result);
@@ -398,6 +404,8 @@ class Temperature extends PGData
                       'startTime' => $this->getStartTime(),
                       'endTime' => $this->getEndTime(),
                       'name' => $this->getName(),
+                      'unit' => $this->sensor->unit,
+                      'type' => $this->sensor->type,
                       'sampleCount' => $this->getSampleCount() ));
     }
 
