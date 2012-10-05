@@ -142,7 +142,7 @@ class GNUPlot {
             return $this->height;    
     } 
 
-    function plotData(  &$PGData, $method, $using, $axis='', $extra='' ) { 
+    function plotData(  &$PGData, $method, $using, $axes='', $extra='' ) { 
         /** 
          * This function is for 2D plotting 
          * 
@@ -168,8 +168,8 @@ class GNUPlot {
         else
             $range = '';
 
-        if ($axis) $axis = " axis $axes "; 
-        $this->plotcommand[] = " $range \"$fn\" using $using title \"$title\" with $method  $axis $extra"; 
+        if ($axes) $axes = " axes $axes "; 
+        $this->plotcommand[] = " $range \"$fn\" using $using $axes title \"$title\" with $method $extra"; 
     } 
 
     function export( $pic_filename ) { 
@@ -203,25 +203,37 @@ class Sensor
 {
     var $id;
     var $name;
+    var $type;
     
-    function __construct($id, $name)
+    function __construct($id, $name, $type)
     {
         $this->id = $id;
         $this->name = $name;
+        $this->type = $type;
     }
     
     static function get_sensor_array()
     {
-        $result = mysql_query("select Anturi, nimi from Anturit order by Anturi");
+        $result = mysql_query("select Anturi, nimi, type from Anturit order by Anturi");
         $i = 0;
         while ($row = mysql_fetch_array($result))
         {
-            $sensors[$i] = new Sensor($row['Anturi'], $row['nimi']);
+            $sensors[$i] = new Sensor($row['Anturi'], $row['nimi'], $row['type']);
             $i++;
         }
         mysql_free_result($result);
         return $sensors;
     }
+    
+    static function find_id($sensors, $id)
+    {
+        foreach($sensors as $sensor)
+        {
+            if ($sensor->id == $id)
+                return $sensor;
+        }
+        return 0;
+    } 
 
 }
 
@@ -232,7 +244,7 @@ class Temperature extends PGData
     var $dateformat = 'Y-m-d H:i:s';
     var $endTime;
     var $startTime;
-    var $sensorid;
+    var $sensor;
     var $avg;    
     var $numRows;
     var $min;
@@ -240,11 +252,11 @@ class Temperature extends PGData
 //    var $filename;
     var $count;
     
-    function __construct($sensorid, $start, $end)
+    function __construct($sensor, $start, $end)
     {
         global $tempDir;
         $this->filename = tempnam($tempDir, "temperaturedata");
-        $this->sensorid = $sensorid;
+        $this->sensor = $sensor;
         $this->setEndTime($end);
         $this->setStartTime($start);
         $this->runQuery();
@@ -260,7 +272,7 @@ class Temperature extends PGData
     {
         $query=
         "select Aika, Lampotila from Mittaukset
-         where Anturi = $this->sensorid 
+         where Anturi = ".$this->sensor->id." 
          and Aika between '".$this->startTime->format('Y-m-d H:i:s')."'
          and '".$this->endTime->format('Y-m-d H:i:s')."'";
         $result = mysql_query($query);
@@ -276,7 +288,7 @@ class Temperature extends PGData
 
         $query=
         "select AVG(Lampotila), MIN(Lampotila), MAX(Lampotila) from Mittaukset
-         where Anturi = $this->sensorid 
+         where Anturi = ".$this->sensor->id." 
          and Aika between '".$this->startTime->format('Y-m-d H:i:s')."'
          and '".$this->endTime->format('Y-m-d H:i:s')."'";
         $result = mysql_query($query);
@@ -286,7 +298,7 @@ class Temperature extends PGData
         $this->max = $row[2];
         mysql_free_result($result);
         
-        $query= "select nimi from Anturit where Anturi = $this->sensorid";
+        $query= "select nimi from Anturit where Anturi = ".$this->sensor->id."";
         $result = mysql_query($query);
         $row = mysql_fetch_array($result);
         $this->name = $row[0];
@@ -359,7 +371,12 @@ class TemperatureGraph extends GNUPlot
     function addTemperatureData($data)
     {
         $this->data[] = $data;
-        $this->plotData($data, 'lines', '1:3', '', "$this->smooth lw $this->linewidth" ); 
+        if (strcmp($data->sensor->type,"temperature") == 0) 
+            $this->plotData($data, 'lines', '1:3', '', "$this->smooth lw $this->linewidth" );
+        elseif (strcmp($data->sensor->type,"power") == 0) {
+            $this->exe("set y2tics border\n");
+            $this->plotData($data, 'lines', '1:3', 'x1y2', "$this->smooth lw $this->linewidth" ); 
+        }
     }
 
     function setLineWidth($width)

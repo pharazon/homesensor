@@ -17,13 +17,17 @@ if (!$width) $width = 800;
 if (!$height) $height = 480;
 if ($fullscreen == "") $fullscreen = false;
 
+$sensors = Sensor::get_sensor_array();
+
+
 foreach ($sensor as $id) {
+    $sensorobj = Sensor::find_id($sensors, $id);
     if (!$dateStart && !$dateEnd)
-        $sensorData[] = new Temperature($id, -$hours, 'now');
+        $sensorData[] = new Temperature($sensorobj, -$hours, 'now');
     else {
         $_dateStart = date_create_from_format('Y-m-d-H-i-s', $dateStart);
         $_dateEnd   = date_create_from_format('Y-m-d-H-i-s', $dateEnd);
-        $sensorData[] = new Temperature($id, $_dateStart, $_dateEnd);
+        $sensorData[] = new Temperature($sensorobj, $_dateStart, $_dateEnd);
     }
 }
 
