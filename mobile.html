@@ -92,6 +92,20 @@ var timeSelected = $("#timeSelect option:selected").attr("value");
 $("#mainPage").bind("pageinit", function(event) {
     checkboxRefresh();
 });
+
+$("#timeDialog").bind('pageinit', function(event) {
+    date = new Date();
+    $("#endDate").data('datebox').options.defaultValue = [date.getFullYear(), date.getMonth(), date.getDate()];
+    $('#endDate').data('datebox').theDate = date;
+    dateString = date.getDate()+'.'+(date.getMonth()+1)+'.'+date.getFullYear();
+    $("#endDate").val(dateString);
+    date = new Date();
+    date.setDate(date.getDate()-1);
+    $("#startDate").data('datebox').options.defaultValue = [date.getFullYear(), date.getMonth(), date.getDate()];
+    $('#startDate').data('datebox').theDate = date;
+    dateString = date.getDate()+'.'+(date.getMonth()+1)+'.'+date.getFullYear();
+    $("#startDate").val(dateString);
+});
     
     $("#sensorlist").on("click", ' > li', function(event) {
         if (selected_index[$(this).index()] == true) {
@@ -145,15 +159,6 @@ $("#graphPage").on("orientationchange", function(event) {
     graphRefresh(buildGraphQuery(sensordata, selected_index));
 });
 
-function parseDate(datestring) {
-    var datearray = datestring.split(".");
-    var date = new Date();
-    date.setFullYear(datearray[2]);
-    date.setMonth(datearray[1]);
-    date.setDate(datearray[0]);
-    return date;
-}
-
 function checkboxRefresh(){
     $.mobile.loading( 'show' );
     $.getJSON('sensor.php', function(data) {
@@ -196,11 +201,16 @@ function buildGraphQuery(sensors, selected) {
 
     var hours = timeSelected;
     if (hours == "custom" || hours == undefined) {
-        var startDate = parseDate($("#startDate").val());
-        var endDate = parseDate($("#endDate").val());
+        var startDate = $('#startDate').data('datebox').theDate;
+        var endDate = $('#endDate').data('datebox').theDate;
+        if (startDate > endDate) {
+            tmpDate = endDate;
+            endDate = startDate;
+            startDate = tmpDate;
+        }
         endDate.setDate(endDate.getDate()+1);
-        var startDateString = ''+startDate.getFullYear()+'-'+startDate.getMonth()+'-'+startDate.getDate()+'-00-00-00';
-        var endDateString = ''+endDate.getFullYear()+'-'+endDate.getMonth()+'-'+endDate.getDate()+'-00-00-00';
+        var startDateString = ''+startDate.getFullYear()+'-'+(startDate.getMonth()+1)+'-'+startDate.getDate()+'-00-00-00';
+        var endDateString = ''+endDate.getFullYear()+'-'+(endDate.getMonth()+1)+'-'+endDate.getDate()+'-00-00-00';
         graphQuery = graphQuery+'dateStart='+startDateString+'&dateEnd='+endDateString+'&';
     } else {
         graphQuery = graphQuery+'hours='+hours+'&';
