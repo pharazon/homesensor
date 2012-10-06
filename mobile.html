@@ -72,7 +72,7 @@
         <input name="startDate" id="startDate" type="date" data-role="datebox" data-options='{"mode": "calbox"}'>
         <label for="endDate">Loppuaika</label>
         <input name="endDate" id="endDate" type="date" data-role="datebox" data-options='{"mode": "calbox"}'>
-    	<a href="#graphPage" id="dateDialogCloseButton" data-role="button" date-rel="back" data-theme="b">Aseta</a>
+    	<a href="#graphPage" id="dateDialogCloseButton" data-role="button" data-rel="back" data-theme="b">Aseta</a>
     </div>
 
 </div><!-- /dialog -->
@@ -164,7 +164,7 @@ function checkboxRefresh(){
     $.getJSON('sensor.php', function(data) {
         $('#sensorlist').empty();
         $.each(data, function(i,sensor) {
-            item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#>' + sensor.name +" " + sensor.value +" "+ sensor.unit +'</a></li>';
+            item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#><p>' + sensor.name +"</p><h3>" + sensor.value +" "+ sensor.unit +'</h3></a></li>';
             $('#sensorlist').append(item);
         })
         $("#sensorlist").listview("refresh");
