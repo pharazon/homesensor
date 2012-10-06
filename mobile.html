@@ -87,6 +87,7 @@ var sersordata;
 var selected_index = [];
 var imageHeight;
 var imageWidth;
+var timeSelected = $("#timeSelect option:selected").attr("value");
 
 $(document).bind("pageinit", function(event) {
     checkboxRefresh();
@@ -110,10 +111,12 @@ $(document).bind("pageinit", function(event) {
     });
     
     $("#timeSelect").change(function () {
-        var selected = $("#timeSelect option:selected").attr("value");
-        if (selected == "custom") {
+        if ($("#timeSelect option:selected").attr("value") != undefined)
+            timeSelected = $("#timeSelect option:selected").attr("value");
+
+        if (timeSelected == "custom") {
             $.mobile.changePage('#timeDialog', 'pop', true, true);
-        } else if (selected > 0)
+        } else if (timeSelected >= 0)
             graphRefresh(buildGraphQuery(sensordata, selected_index));
     });
 
@@ -191,7 +194,7 @@ function buildGraphQuery(sensors, selected) {
             graphQuery = graphQuery+'sensor[]='+sensor.id+'&';
     });
 
-    var hours = $("#timeSelect option:selected").attr("value")
+    var hours = timeSelected;
     if (hours == "custom" || hours == undefined) {
         var startDate = parseDate($("#startDate").val());
         var endDate = parseDate($("#endDate").val());
