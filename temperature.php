@@ -229,7 +229,7 @@ class Sensor
         $i = 0;
         while ($row = mysql_fetch_array($result))
         {
-            $q = mysql_query("select Lampotila from Mittaukset where Anturi =".$row['Anturi']." order by Aika desc limit 1");
+            $q = mysql_query("select Lampotila from Mittaukset where Anturi =".mysql_escape_string($row['Anturi'])." order by Aika desc limit 1");
             $valrow = mysql_fetch_row($q);
             mysql_free_result($q);
             $sensors[$i] = new Sensor($row['Anturi'], $row['nimi'], $row['type'], $row['unit'], $valrow[0]);
@@ -288,7 +288,7 @@ class Temperature extends PGData
     {
         $query=
         "select Aika, Lampotila from Mittaukset
-         where Anturi = ".$this->sensor->id." 
+         where Anturi = ".mysql_escape_string($this->sensor->id)." 
          and Aika between '".$this->startTime->format('Y-m-d H:i:s')."'
          and '".$this->endTime->format('Y-m-d H:i:s')."'";
 
@@ -318,7 +318,7 @@ class Temperature extends PGData
 
         $query=
         "select AVG(Lampotila), MIN(Lampotila), MAX(Lampotila) from Mittaukset
-         where Anturi = ".$this->sensor->id." 
+         where Anturi = ".mysql_escape_string($this->sensor->id)." 
          and Aika between '".$this->startTime->format('Y-m-d H:i:s')."'
          and '".$this->endTime->format('Y-m-d H:i:s')."'";
         $result = mysql_query($query);
@@ -328,7 +328,7 @@ class Temperature extends PGData
         $this->max = $row[2];
         mysql_free_result($result);
         
-        $query= "select nimi from Anturit where Anturi = ".$this->sensor->id."";
+        $query= "select nimi from Anturit where Anturi = ".mysql_escape_string($this->sensor->id)."";
         $result = mysql_query($query);
         $row = mysql_fetch_array($result);
         $this->name = $row[0];
