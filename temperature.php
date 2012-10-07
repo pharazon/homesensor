@@ -232,7 +232,9 @@ class Sensor
             $q = mysql_query("select Lampotila from Mittaukset where Anturi =".mysql_escape_string($row['Anturi'])." order by Aika desc limit 1");
             $valrow = mysql_fetch_row($q);
             mysql_free_result($q);
-            $sensors[$i] = new Sensor($row['Anturi'], $row['nimi'], $row['type'], $row['unit'], $valrow[0]);
+            $value = $valrow[0];
+            if (!strcmp($row['type'],"power")) $value = (int) $value;
+            $sensors[$i] = new Sensor($row['Anturi'], $row['nimi'], $row['type'], $row['unit'], $value);
             $i++;
         }
         mysql_free_result($result);
