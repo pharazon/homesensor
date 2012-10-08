@@ -3,7 +3,6 @@
 $tempDir = '/tmp/tempdata/';
 
 if (!file_exists($tempDir)) {
-  echo  "Creating ".$tempDir."...<p>";
   mkdir ( $tempDir,0755);
 }
 
@@ -18,10 +17,6 @@ mysql_select_db($database);
 
 
 $GNUPLOT = '/usr/bin/gnuplot';  
-
-// DONT change the code below if you dont know what you are doing 
-$IDCounter = 0; 
-
 
 class PGData { 
     var $filename; // Name of the data file. Can be explicitly specified or automatically generated 
@@ -49,7 +44,7 @@ class PGData {
      
     function dumpIntoFile( $filename='' ) { 
         if ($this->filename) { print "Error: Data file exists [ $this->filename ] !\n"; return; } 
-        global $tempDir, $IDCounter; 
+        global $tempDir; 
         if (!$filename) { 
             // generate a file name 
             $filename = tempnam($tempDir, "data");
