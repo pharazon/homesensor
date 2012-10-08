@@ -1,36 +1,31 @@
 <?php
+require "temperature.php";
 
-class Sensor
+function is_ip_private($ip)
 {
-	public $id;
-	public $name;
-	public $value;
+    return !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
 }
 
-$database =  "Lampo";
-$dbconnect = mysql_connect(localhost, root, '');
-mysql_select_db($database, $dbconnect);
-$query = "select Anturi, nimi from Anturit";
-$result = mysql_query($query, $dbconnect);
-
-for ($i=0; $line = mysql_fetch_assoc($result); $i++)
-{
-	$s = new Sensor();
-	$s->name = $line['nimi'];
-	$s->id = $line['Anturi'];
-	$q = mysql_query("select Lampotila from Mittaukset where Anturi =".$line['Anturi']." order by Aika desc limit 1" , $dbconnect);
-	$row = mysql_fetch_row($q);
-	$s->value = $row[0];
-	$sensors[$i] = $s;
-}
-
+$sensors = Sensor::get_sensor_array();
 $now = date("D, d M Y H:i:s T");
+
+$clientip = $_SERVER['REMOTE_ADDR'];
+if (isset($_SERVER['SERVER_NAME']))
+    $ip = $_SERVER['SERVER_NAME'];
+elseif (!is_ip_private($clientip) and !is_ip_private($_SERVER['SERVER_ADDR']))
+    $ip = $_SERVER['SERVER_ADDR'];
+elseif (!is_ip_private($clientip) and is_ip_private($_SERVER['SERVER_ADDR']))
+    $ip = file_get_contents("http://ifconfig.me/ip");
+else
+    $ip = $_SERVER['SERVER_ADDR'];
+
+$path = $dirpath = substr($_SERVER['REQUEST_URI'],1,strrpos($_SERVER['REQUEST_URI'],'/')-1);
 
 $output = "<?xml version=\"1.0\"?>
 <rss version=\"2.0\">
   <channel>
   <title>Lämpötila</title>
-  <image>http://192.168.1.2/lampotila/graph.php</image>
+  <image>http://".$ip."/".$path."/graph.php</image>
   <pubDate>$now</pubDate>
   <lastBuildDate>$now</lastBuildDate>
   <ttl>5</ttl>\n";
@@ -40,7 +35,7 @@ foreach ($sensors as $sensor)
     $output .= "  <item>
     <title>".$sensor->name."</title>
     <description>".$sensor->value."</description>
-    <link>http://192.168.1.2/lampotila/graph.php?".htmlspecialchars("sensor[]=$sensor->id")."</link>
+    <link>http://".$ip."/".$path."/graph.php?".htmlspecialchars("sensor[]=$sensor->id")."</link>
     <sensor>".$sensor->id."</sensor>
   </item>\n";
 }

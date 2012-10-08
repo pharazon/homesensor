@@ -11,7 +11,7 @@
     <link rel="stylesheet" type="text/css" href="http://dev.jtsage.com/cdn/datebox/latest/jqm-datebox.min.css" />
     <script type="text/javascript" src="http://dev.jtsage.com/cdn/datebox/latest/jqm-datebox.core.min.js"></script>
     <script type="text/javascript" src="http://dev.jtsage.com/cdn/datebox/latest/jqm-datebox.mode.calbox.min.js"></script>
-    <script type="text/javascript" src="http://dev.jtsage.com/cdn/datebox/i18n/jquery.mobile.datebox.i18n.en_US.utf8.js"></script> 
+    <script type="text/javascript" src="http://dev.jtsage.com/cdn/datebox/i18n/jquery.mobile.datebox.i18n.fi.utf8.js"></script> 
 </head> 
 <body> 
 
@@ -72,7 +72,7 @@
         <input name="startDate" id="startDate" type="date" data-role="datebox" data-options='{"mode": "calbox"}'>
         <label for="endDate">Loppuaika</label>
         <input name="endDate" id="endDate" type="date" data-role="datebox" data-options='{"mode": "calbox"}'>
-    	<a href="#graphPage" id="dateDialogCloseButton" data-role="button" date-rel="back" data-theme="b">Aseta</a>
+    	<a href="#graphPage" id="dateDialogCloseButton" data-role="button" data-rel="back" data-theme="b">Aseta</a>
     </div>
 
 </div><!-- /dialog -->
@@ -83,13 +83,28 @@ jQuery.extend(jQuery.mobile.datebox.prototype.options, {
     'overrideHeaderFormat': '%d.%m.%Y'
 });
 
-var sersordata;
-var selected_index = [];
+var sensordata = new Array();
+var selected_index = new Array();
 var imageHeight;
 var imageWidth;
+var timeSelected = $("#timeSelect option:selected").attr("value");
 
-$(document).bind("pageinit", function(event) {
+$("#mainPage").bind("pageinit", function(event) {
     checkboxRefresh();
+});
+
+$("#timeDialog").bind('pageinit', function(event) {
+    date = new Date();
+    $("#endDate").data('datebox').options.defaultValue = [date.getFullYear(), date.getMonth(), date.getDate()];
+    $('#endDate').data('datebox').theDate = date;
+    dateString = date.getDate()+'.'+(date.getMonth()+1)+'.'+date.getFullYear();
+    $("#endDate").val(dateString);
+    date = new Date();
+    date.setDate(date.getDate()-1);
+    $("#startDate").data('datebox').options.defaultValue = [date.getFullYear(), date.getMonth(), date.getDate()];
+    $('#startDate').data('datebox').theDate = date;
+    dateString = date.getDate()+'.'+(date.getMonth()+1)+'.'+date.getFullYear();
+    $("#startDate").val(dateString);
 });
     
     $("#sensorlist").on("click", ' > li', function(event) {
@@ -110,11 +125,17 @@ $(document).bind("pageinit", function(event) {
     });
     
     $("#timeSelect").change(function () {
-        var selected = $("#timeSelect option:selected").attr("value");
-        if (selected == "custom") {
+        if ($("#timeSelect option:selected").attr("value") != undefined)
+            timeSelected = $("#timeSelect option:selected").attr("value");
+
+        if (timeSelected == "custom") {
             $.mobile.changePage('#timeDialog', 'pop', true, true);
-        } else
+        } else if (timeSelected >= 0)
             graphRefresh(buildGraphQuery(sensordata, selected_index));
+    });
+
+    $("#timeSelect").on("click", function () {
+        document.getElementById('timeSelect').selectedIndex = -1;
     });
 
     $("#graphButton").on("click", function(event) {
@@ -138,21 +159,12 @@ $("#graphPage").on("orientationchange", function(event) {
     graphRefresh(buildGraphQuery(sensordata, selected_index));
 });
 
-function parseDate(datestring) {
-    var datearray = datestring.split(".");
-    var date = new Date();
-    date.setFullYear(datearray[2]);
-    date.setMonth(datearray[1]);
-    date.setDate(datearray[0]);
-    return date;
-}
-
 function checkboxRefresh(){
     $.mobile.loading( 'show' );
     $.getJSON('sensor.php', function(data) {
         $('#sensorlist').empty();
         $.each(data, function(i,sensor) {
-            item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#>' + sensor.name +" " + sensor.value + '</a></li>';
+            item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#><p>' + sensor.name +"</p><h3>" + sensor.value +" "+ sensor.unit +'</h3></a></li>';
             $('#sensorlist').append(item);
         })
         $("#sensorlist").listview("refresh");
@@ -168,7 +180,7 @@ function graphRefresh(query) {
         $('#sensorStatView').empty();
         $('#graphImage').append(sensors.graphImage);
         $.each(sensors.data, function(i, data){
-          item = "<li><h3>"+data.name+"</h3><p>Keskiarvo: "+data.avg+"</p><p>Maksimi: "+data.max+"</p><p>Minimi: "+data.min+"</p></li>";
+          item = "<li><h3>"+data.name+"</h3><p>Keskiarvo: "+data.avg+" "+ data.unit +"</p><p>Maksimi: "+data.max+" "+ data.unit +"</p><p>Minimi: "+data.min+" "+ data.unit +"</p></li>";
           $('#sensorStatView').append(item);
         });
         
@@ -187,13 +199,18 @@ function buildGraphQuery(sensors, selected) {
             graphQuery = graphQuery+'sensor[]='+sensor.id+'&';
     });
 
-    var hours = $("#timeSelect option:selected").attr("value")
-    if (hours == "custom") {
-        var startDate = parseDate($("#startDate").val());
-        var endDate = parseDate($("#endDate").val());
+    var hours = timeSelected;
+    if (hours == "custom" || hours == undefined) {
+        var startDate = $('#startDate').data('datebox').theDate;
+        var endDate = $('#endDate').data('datebox').theDate;
+        if (startDate > endDate) {
+            tmpDate = endDate;
+            endDate = startDate;
+            startDate = tmpDate;
+        }
         endDate.setDate(endDate.getDate()+1);
-        var startDateString = ''+startDate.getFullYear()+'-'+startDate.getMonth()+'-'+startDate.getDate()+'-00-00-00';
-        var endDateString = ''+endDate.getFullYear()+'-'+endDate.getMonth()+'-'+endDate.getDate()+'-00-00-00';
+        var startDateString = ''+startDate.getFullYear()+'-'+(startDate.getMonth()+1)+'-'+startDate.getDate()+'-00-00-00';
+        var endDateString = ''+endDate.getFullYear()+'-'+(endDate.getMonth()+1)+'-'+endDate.getDate()+'-00-00-00';
         graphQuery = graphQuery+'dateStart='+startDateString+'&dateEnd='+endDateString+'&';
     } else {
         graphQuery = graphQuery+'hours='+hours+'&';
