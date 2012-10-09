@@ -237,7 +237,7 @@ function buildGraphQuery(sensors, selected) {
     var hours = timeSelected;
     if (hours == "custom" || hours == undefined) {
         var startDate = $('#startDate').data('datebox').theDate;
-        var endDate = $('#endDate').data('datebox').theDate;
+        var endDate = new Date($('#endDate').data('datebox').theDate.getTime());
         if (startDate > endDate) {
             tmpDate = endDate;
             endDate = startDate;
