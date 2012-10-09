@@ -1,7 +1,7 @@
 <?
 require "temperature.php";
 
-$selectRequestVariables = array("hours","sensor","width","height", "fullscreen", "dataFormat", "imageFormat", "dateStart", "dateEnd");
+$selectRequestVariables = array("hours","sensor","width","height", "fullscreen", "dataFormat", "imageFormat", "dateStart", "dateEnd", "histogram");
 foreach($selectRequestVariables as $selectRequestVar) {
     eval('$GLOBALS["'.$selectRequestVar.'"] = $'.
         $selectRequestVar.' = isset($_REQUEST["'.
@@ -13,6 +13,7 @@ if (!$dataFormat) $dataFormat = 'image';
 if (!$imageFormat) $imageFormat = 'svg';
 if (!$hours) $hours = 24;
 if (!is_array($sensor)) $sensor = array(0);
+if (!is_array($histogram)) $histogram = array();
 if (!$width) $width = 800;
 if (!$height) $height = 480;
 if ($fullscreen == "") $fullscreen = false;
@@ -21,19 +22,26 @@ $sensors = Sensor::get_sensor_array();
 
 
 foreach ($sensor as $id) {
+    if (in_array($id, $histogram))
+        $_histogram = True;
+    else
+        $_histogram = False;
+    
     $sensorobj = Sensor::find_id($sensors, $id);
     if (!$dateStart && !$dateEnd)
-        $sensorData[] = new Temperature($sensorobj, -$hours, 'now');
+        $sensorData[] = new Temperature($sensorobj, -$hours, 'now', $_histogram);
     else {
         $_dateStart = date_create_from_format('Y-m-d-H-i-s', $dateStart);
         $_dateEnd   = date_create_from_format('Y-m-d-H-i-s', $dateEnd);
-        $sensorData[] = new Temperature($sensorobj, $_dateStart, $_dateEnd);
+        $sensorData[] = new Temperature($sensorobj, $_dateStart, $_dateEnd, $_histogram);
     }
 }
 
 $graph = new TemperatureGraph();
-foreach ($sensorData as $s)
-    $graph->addTemperatureData($s);
+foreach ($sensorData as $s) {
+        $graph->addTemperatureData($s);
+}
+
 $graph->setDataFormat($dataFormat);
 $graph->setImageFormat($imageFormat);
 $graph->setSize($width, $height);
