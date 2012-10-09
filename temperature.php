@@ -164,7 +164,7 @@ class GNUPlot {
         $PGData->writeDataFile(); 
 
         $fn = $PGData->filename; 
-        $title = $PGData->getName();
+        $title = $PGData->getName()." (".$PGData->getUnit().")";
         if (count($this->plotcommand) == 0)
             $range =" [\"".$PGData->getStartTime()."\":\"".$PGData->getEndTime()."\"] ";
         else
@@ -436,6 +436,11 @@ class Temperature extends PGData
     function getEndTime($format='Y-m-d H:i:s') { return $this->endTime->format($format); }
     function getName() { return $this->name; }
     function getType() { return $this->sensor->type; }
+    function getUnit()
+    {
+        if ($this->isHistogram() and $this->getType() == "power")
+            return "kWH";
+        return $this->sensor->unit; }
 
     function getDataArray()
     {
