@@ -302,31 +302,17 @@ class Temperature extends PGData
         $intervalobj = DateInterval::createFromDateString($interval);
         $daterange = new DatePeriod($this->startTime, $intervalobj, $this->endTime);
     
-        $query=
-        "select Aika, Lampotila from Mittaukset
-         where Anturi = ".mysql_escape_string($this->sensor->id)." 
-         and Aika between '".$this->startTime->format('Y-m-d H:i:s')."'
-         and '".$this->endTime->format('Y-m-d H:i:s')."'";
-
-        /* 
-        Use unbuffered_query to speed up large queries by not loading the whole
-        result to php side. Use temporary table to limit locking of database.
-        Also make simple downsampling to limit memory usage both on server and client.
-        */        
-        mysql_query ("CREATE TEMPORARY TABLE TempTable $query");
-        $this->count = mysql_affected_rows();
-
         foreach ($daterange as $date)
         {
             $dateEnd = clone $date;
             $dateEnd = $dateEnd->modify($interval);
-            $result = mysql_unbuffered_query ("SELECT AVG(Lampotila) FROM TempTable where Aika between '".$date->format('Y-m-d H:i:s')."' and '".$dateEnd->format('Y-m-d H:i:s')."'"); 
+            $result = mysql_query ("SELECT AVG(Lampotila) FROM Mittaukset where Anturi = ".mysql_escape_string($this->sensor->id)." and Aika between '".$date->format('Y-m-d H:i:s')."' and '".$dateEnd->format('Y-m-d H:i:s')."'"); 
             $row = mysql_fetch_array($result);
             $value = $row[0]*($intervalobj->format("%s")/3600);
             $this->data[] = array( $date->modify(((int)($intervalobj->format("%s"))/2)." seconds"), $value/1000);
+            $this->count += mysql_affected_rows();
             mysql_free_result($result);
         }
-        mysql_query ('DROP TABLE TempTable'); 
     }
 
     private function queryValues() {
