@@ -439,7 +439,7 @@ class Temperature extends PGData
     function getUnit()
     {
         if ($this->isHistogram() and $this->getType() == "power")
-            return "kWH";
+            return "kWh";
         return $this->sensor->unit; }
 
     function getDataArray()
