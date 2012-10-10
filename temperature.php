@@ -3,7 +3,6 @@
 $tempDir = '/tmp/tempdata/';
 
 if (!file_exists($tempDir)) {
-  echo  "Creating ".$tempDir."...<p>";
   mkdir ( $tempDir,0755);
 }
 
@@ -18,10 +17,6 @@ mysql_select_db($database);
 
 
 $GNUPLOT = '/usr/bin/gnuplot';  
-
-// DONT change the code below if you dont know what you are doing 
-$IDCounter = 0; 
-
 
 class PGData { 
     var $filename; // Name of the data file. Can be explicitly specified or automatically generated 
@@ -49,7 +44,7 @@ class PGData {
      
     function dumpIntoFile( $filename='' ) { 
         if ($this->filename) { print "Error: Data file exists [ $this->filename ] !\n"; return; } 
-        global $tempDir, $IDCounter; 
+        global $tempDir; 
         if (!$filename) { 
             // generate a file name 
             $filename = tempnam($tempDir, "data");
@@ -136,7 +131,9 @@ class GNUPlot {
     function setTerm($format = '') {
         if ($format != '')
             $this->format = $format;
-        $this->termcommand = "set term $this->format size $this->width,$this->height\n";
+        $term = $this->format;
+        if ($this->format == 'png') $term = 'pngcairo';
+        $this->termcommand = "set term $term size $this->width,$this->height\n";
     }
 
     function getTerm($req = 'array') {
@@ -166,11 +163,10 @@ class GNUPlot {
          **/ 
          
         $plot = $this->plot; 
-        if (!$PGData->filename) $PGData->dumpIntoFile(); 
-        if (!$PGData->filename) { print "Error: Empty dataset!\n"; return; } 
+        $PGData->writeDataFile(); 
 
         $fn = $PGData->filename; 
-        $title = $PGData->getName();
+        $title = $PGData->getName()." (".$PGData->getUnit().")";
         if (count($this->plotcommand) == 0)
             $range =" [\"".$PGData->getStartTime()."\":\"".$PGData->getEndTime()."\"] ";
         else
@@ -268,16 +264,19 @@ class Temperature extends PGData
     var $filename;
     var $count     = 0;
     var $data      = array();
+    var $histogram = False;
     
-    function __construct($sensor, $start, $end)
+    function __construct($sensor, $start, $end, $histogram)
     {
         global $tempDir;
         $this->filename = tempnam($tempDir, "temperaturedata");
         $this->sensor = $sensor;
+        $this->name = $this->sensor->name;
+        $this->histogram = $histogram;
         $this->setEndTime($end);
         $this->setStartTime($start);
         $this->runQuery();
-        $this->writeDataFile();
+//        $this->writeDataFile();
     }
 
     function __destruct()
@@ -288,6 +287,37 @@ class Temperature extends PGData
 
     private function runQuery()
     {
+        if ($this->isHistogram())
+        {
+            $diff_seconds = $this->endTime->getTimestamp() - $this->startTime->getTimestamp();
+            if ($diff_seconds > 7*86400)
+                $this->queryTimeIntervalValues("86400 seconds");
+            else
+                $this->queryTimeIntervalValues("3600 seconds");
+        }
+        else
+            $this->queryValues();
+        $this->queryAvgMinMax();
+    }
+
+    private function queryTimeIntervalValues($interval) {
+        $intervalobj = DateInterval::createFromDateString($interval);
+        $daterange = new DatePeriod($this->startTime, $intervalobj, $this->endTime);
+    
+        foreach ($daterange as $date)
+        {
+            $dateEnd = clone $date;
+            $dateEnd = $dateEnd->modify($interval);
+            $result = mysql_query ("SELECT AVG(Lampotila) FROM Mittaukset where Anturi = ".mysql_escape_string($this->sensor->id)." and Aika between '".$date->format('Y-m-d H:i:s')."' and '".$dateEnd->format('Y-m-d H:i:s')."'"); 
+            $row = mysql_fetch_array($result);
+            $value = $row[0]*($intervalobj->format("%s")/3600);
+            $this->data[] = array( $date->modify(((int)($intervalobj->format("%s"))/2)." seconds"), $value/1000);
+            $this->count += mysql_affected_rows();
+            mysql_free_result($result);
+        }
+    }
+
+    private function queryValues() {
         $query=
         "select Aika, Lampotila from Mittaukset
          where Anturi = ".mysql_escape_string($this->sensor->id)." 
@@ -317,7 +347,9 @@ class Temperature extends PGData
         }
         mysql_free_result($result);
         mysql_query ('DROP TABLE TempTable'); 
+    }
 
+    private function queryAvgMinMax() {
         $query=
         "select AVG(Lampotila), MIN(Lampotila), MAX(Lampotila) from Mittaukset
          where Anturi = ".mysql_escape_string($this->sensor->id)." 
@@ -329,17 +361,10 @@ class Temperature extends PGData
         $this->min = $row[1];
         $this->max = $row[2];
         mysql_free_result($result);
-        
-        $query= "select nimi from Anturit where Anturi = ".mysql_escape_string($this->sensor->id)."";
-        $result = mysql_query($query);
-        $row = mysql_fetch_array($result);
-        $this->name = $row[0];
-        mysql_free_result($result);
     }
 
-    private function writeDataFile()
+    function writeDataFile()
     {
-        $this->filterSlidingAvg(5);
         $fp = fopen($this->filename, 'w');
     	if ($fp == FALSE) die("could not open file $this->filename\n");
         foreach ($this->data as $data)
@@ -393,14 +418,22 @@ class Temperature extends PGData
             $this->endTime = $end;
         }
     }
-
+    function setHistogram($bool) { $this->histogram = $bool; }
+    function isHistogram() { return $this->histogram; }
     function getStartTime($format='Y-m-d H:i:s') { return $this->startTime->format($format); }
     function getEndTime($format='Y-m-d H:i:s') { return $this->endTime->format($format); }
     function getName() { return $this->name; }
+    function getType() { return $this->sensor->type; }
+    function getUnit()
+    {
+        if ($this->isHistogram() and $this->getType() == "power")
+            return "kWh";
+        return $this->sensor->unit; }
 
     function getDataArray()
     {
-        return (array('avg' => $this->getAvg(),
+        return (array('sensorid' => $this->sensor->id,
+                      'avg' => $this->getAvg(),
                       'min' => $this->getMin(),
                       'max' => $this->getMax(),
                       'startTime' => $this->getStartTime(),
@@ -408,6 +441,7 @@ class Temperature extends PGData
                       'name' => $this->getName(),
                       'unit' => $this->sensor->unit,
                       'type' => $this->sensor->type,
+                      'histogram' => $this->histogram,
                       'sampleCount' => $this->getSampleCount() ));
     }
 
@@ -429,20 +463,48 @@ class TemperatureGraph extends GNUPlot
         $this->exe("set xdata time\n");
         $this->exe("set grid xtics 0\n");
         $this->exe("set grid ytics 0\n");
+        $this->exe("set style fill transparent solid 0.5\n");
     }
 
     function addTemperatureData($data)
     {
         $this->data[] = $data;
-        if ($data->getSampleCount() == 0) return;
-        if (strcmp($data->sensor->type,"temperature") == 0) 
-            $this->plotData($data, 'lines', '1:3', '', "$this->smooth lw $this->linewidth" );
-        elseif (strcmp($data->sensor->type,"power") == 0) {
-            $this->exe("set y2tics border\n");
-            $this->plotData($data, 'lines', '1:3', 'x1y2', "$this->smooth lw $this->linewidth" ); 
+    }
+    
+    function plot()
+    {
+        $plotOrder = array();
+        foreach ($this->data as $data)
+        {
+            if ($data->getType() == "power" or $data->isHistogram())
+                array_unshift($plotOrder, $data);
+            else
+                $plotOrder[] = $data;
+        }
+
+        foreach ($plotOrder as $data)
+        {
+            if ($data->isHistogram())
+                $type = "boxes";
+            else
+            {
+                $data->filterSlidingAvg(5);
+                $type = "lines";
+            }
+
+            if ($data->getSampleCount() == 0) return;
+            if ($data->getType() == "temperature")
+            {
+                $this->plotData($data, $type, '1:3', '', "$this->smooth lw $this->linewidth" );
+            }
+            elseif ($data->getType() == "power")
+            {
+                $linewidth = ($data->isHistogram() ? 1 : $this->linewidth);
+                $this->exe("set y2tics border\n");
+                $this->plotData($data, $type, '1:3', 'x1y2', "$this->smooth lw $linewidth" ); 
+            }
         }
     }
-
     function setLineWidth($width)
     {
         $this->linewidth = $width;
@@ -469,6 +531,7 @@ class TemperatureGraph extends GNUPlot
     function getData()
     {
         global $tempDir;
+        $this->plot();
         $filename = tempnam($tempDir, "temperaturepic");
         $this->saveGraphFile($filename);
         while (!file_exists($filename)) {;}

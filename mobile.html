@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"> 	
     <link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0-rc.2/jquery.mobile-1.2.0-rc.2.min.css" />
     <script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
-    <script src="http://code.jquery.com/mobile/1.2.0-rc.2/jquery.mobile-1.2.0-rc.2.min.js"></script>
+    <script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
 
     <link rel="stylesheet" type="text/css" href="http://dev.jtsage.com/cdn/datebox/latest/jqm-datebox.min.css" />
     <script type="text/javascript" src="http://dev.jtsage.com/cdn/datebox/latest/jqm-datebox.core.min.js"></script>
@@ -54,6 +54,7 @@
             <option selected value="24">1 päivä</option>
             <option value="72">3 päivää</option>
             <option value="168">1 viikko</option>
+            <option value="744">1 kuukausi</option>
             <option value="custom">Tarkemmin...</option>
         </select>
     </div>
@@ -83,8 +84,25 @@ jQuery.extend(jQuery.mobile.datebox.prototype.options, {
     'overrideHeaderFormat': '%d.%m.%Y'
 });
 
+
+// From the Modernizr source
+var inlineSVG = (function() {
+  var div = document.createElement("div");
+  div.innerHTML = "<svg/>";
+  return (div.firstChild && div.firstChild.namespaceURI) == 'http://www.w3.org/2000/svg';
+})();
+
+var svgRoot = null;
+if ("createElementNS" in document)
+  svgRoot = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+var supportsSVG = false;
+if (inlineSVG && svgRoot && "width" in svgRoot)
+    supportsSVG = true;
+
 var sensordata = new Array();
 var selected_index = new Array();
+var histogram = new Array();
 var imageHeight;
 var imageWidth;
 var timeSelected = $("#timeSelect option:selected").attr("value");
@@ -164,7 +182,7 @@ function checkboxRefresh(){
     $.getJSON('sensor.php', function(data) {
         $('#sensorlist').empty();
         $.each(data, function(i,sensor) {
-            item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#><p>' + sensor.name +"</p><h3>" + sensor.value +" "+ sensor.unit +'</h3></a></li>';
+            var item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#><p>' + sensor.name +"</p><h3>" + sensor.value +" "+ sensor.unit +'</h3></a></li>';
             $('#sensorlist').append(item);
         })
         $("#sensorlist").listview("refresh");
@@ -178,12 +196,45 @@ function graphRefresh(query) {
     $.getJSON(query, function(sensors) {
         $('#graphImage').empty();
         $('#sensorStatView').empty();
-        $('#graphImage').append(sensors.graphImage);
-        $.each(sensors.data, function(i, data){
-          item = "<li><h3>"+data.name+"</h3><p>Keskiarvo: "+data.avg+" "+ data.unit +"</p><p>Maksimi: "+data.max+" "+ data.unit +"</p><p>Minimi: "+data.min+" "+ data.unit +"</p></li>";
-          $('#sensorStatView').append(item);
-        });
+        if (supportsSVG)
+            $('#graphImage').append(sensors.graphImage);
+        else
+            $('#graphImage').append("<img src="+query.replace('json','')+">");
         
+        $.each(sensors.data, function(i, data){
+
+            if (data.type == "power") {
+                var item = "<li><h3>"+data.name+"</h3>" +
+                       "<select name='unit' id='powerUnitSwitch' data-inline='true' data-native-menu='false'>" +
+            	       "<option histogram='false' value="+data.sensorid+">Teho (W)</option>" +
+	                   "<option histogram='true'  value="+data.sensorid+">Kulutus (kWh)</option>" + 
+                       "</select>" +
+                       "<p>Keskiarvo: "+data.avg+" "+ data.unit +"</p>" +
+                       "<p>Maksimi: "+data.max+" "+ data.unit +"</p><p>Minimi: "+data.min+" "+ data.unit +"</p>" +
+                       "</li>";
+                $('#sensorStatView').append(item).trigger("create");
+                if (jQuery.inArray(data.sensorid, histogram) >= 0) {
+                    $("#powerUnitSwitch option:last").attr("selected", "selected");
+                    $('#powerUnitSwitch').selectmenu("refresh");
+                }
+                $("#powerUnitSwitch").on("change", function(event) {
+                    var _id = $(this).attr("value");
+                    var _id_pos = jQuery.inArray(_id, histogram);
+                    if (_id_pos <= 0)
+                        histogram = new Array();
+                    else
+                        histogram = histogram.splice(_id_pos,1);
+                    if (this.selectedIndex == 1)
+                        histogram.push(_id);
+                    graphRefresh(buildGraphQuery(sensordata, selected_index));
+                });
+
+            } else {
+                var item = "<li><h3>"+data.name+"</h3><p>Keskiarvo: "+data.avg+" "+ data.unit +"</p><p>Maksimi: "+data.max+" "+ data.unit +"</p><p>Minimi: "+data.min+" "+ data.unit +"</p></li>";
+                $('#sensorStatView').append(item);
+            }
+        });
+
         $('#sensorStatView').listview('refresh');
         $.mobile.loading( 'hide' );
     });
@@ -191,18 +242,24 @@ function graphRefresh(query) {
 
 
 function buildGraphQuery(sensors, selected) {
-    imageHeight = $(window).height() - $("#header").height() - $("#footer").height() - 50;
-    imageWidth = $(window).width() - 25;
-    var graphQuery = "graph.php?fullscreen=1&dataFormat=json&";
+    imageHeight = $(window).height() - $("#header").height();
+    imageWidth = $(window).width();
+    if (imageHeight > 600) imageHeight = imageHeight - 2*$("#footer").height();
+    var imageFormat = "svg";
+    if (!supportsSVG) imageFormat = "png";
+    var graphQuery = "graph.php?fullscreen=1&dataFormat=json&imageFormat="+imageFormat+"&";
     $.each(sensors, function(i, sensor){
         if (selected[i] == true)
             graphQuery = graphQuery+'sensor[]='+sensor.id+'&';
     });
-
+    $.each(histogram, function(i, sensorid){
+        graphQuery = graphQuery+'histogram[]='+sensorid+'&';
+    });
+    
     var hours = timeSelected;
     if (hours == "custom" || hours == undefined) {
         var startDate = $('#startDate').data('datebox').theDate;
-        var endDate = $('#endDate').data('datebox').theDate;
+        var endDate = new Date($('#endDate').data('datebox').theDate.getTime());
         if (startDate > endDate) {
             tmpDate = endDate;
             endDate = startDate;
