@@ -62,6 +62,7 @@ if ($dataFormat == "image") {
 }
 
 if ($dataFormat == "json") {
+    header('Content-type: application/json');
     echo $graph->getJSONData();
 }
 ?>
