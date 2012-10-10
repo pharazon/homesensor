@@ -182,7 +182,7 @@ function checkboxRefresh(){
     $.getJSON('sensor.php', function(data) {
         $('#sensorlist').empty();
         $.each(data, function(i,sensor) {
-            item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#><p>' + sensor.name +"</p><h3>" + sensor.value +" "+ sensor.unit +'</h3></a></li>';
+            var item = '<li data-icon="false" data-theme="a" id="' + sensor.id + '"><a href=#><p>' + sensor.name +"</p><h3>" + sensor.value +" "+ sensor.unit +'</h3></a></li>';
             $('#sensorlist').append(item);
         })
         $("#sensorlist").listview("refresh");
@@ -204,7 +204,7 @@ function graphRefresh(query) {
         $.each(sensors.data, function(i, data){
 
             if (data.type == "power") {
-                item = "<li><h3>"+data.name+"</h3>" +
+                var item = "<li><h3>"+data.name+"</h3>" +
                        "<select name='unit' id='powerUnitSwitch' data-inline='true' data-native-menu='false'>" +
             	       "<option histogram='false' value="+data.sensorid+">Teho (W)</option>" +
 	                   "<option histogram='true'  value="+data.sensorid+">Kulutus (kWh)</option>" + 
@@ -213,29 +213,28 @@ function graphRefresh(query) {
                        "<p>Maksimi: "+data.max+" "+ data.unit +"</p><p>Minimi: "+data.min+" "+ data.unit +"</p>" +
                        "</li>";
                 $('#sensorStatView').append(item).trigger("create");
-                if (histogram.indexOf(data.sensorid) >= 0) {
+                if (jQuery.inArray(data.sensorid, histogram) >= 0) {
                     $("#powerUnitSwitch option:last").attr("selected", "selected");
                     $('#powerUnitSwitch').selectmenu("refresh");
                 }
                 $("#powerUnitSwitch").on("change", function(event) {
                     var _id = $(this).attr("value");
-                    var _id_pos = histogram.indexOf(_id);
+                    var _id_pos = jQuery.inArray(_id, histogram);
                     if (_id_pos <= 0)
                         histogram = new Array();
                     else
                         histogram = histogram.splice(_id_pos,1);
-                    var test = this.selectedIndex;
                     if (this.selectedIndex == 1)
                         histogram.push(_id);
                     graphRefresh(buildGraphQuery(sensordata, selected_index));
                 });
 
             } else {
-                item = "<li><h3>"+data.name+"</h3><p>Keskiarvo: "+data.avg+" "+ data.unit +"</p><p>Maksimi: "+data.max+" "+ data.unit +"</p><p>Minimi: "+data.min+" "+ data.unit +"</p></li>";
+                var item = "<li><h3>"+data.name+"</h3><p>Keskiarvo: "+data.avg+" "+ data.unit +"</p><p>Maksimi: "+data.max+" "+ data.unit +"</p><p>Minimi: "+data.min+" "+ data.unit +"</p></li>";
                 $('#sensorStatView').append(item);
             }
         });
-        
+
         $('#sensorStatView').listview('refresh');
         $.mobile.loading( 'hide' );
     });
