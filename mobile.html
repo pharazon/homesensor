@@ -92,10 +92,13 @@ var inlineSVG = (function() {
   return (div.firstChild && div.firstChild.namespaceURI) == 'http://www.w3.org/2000/svg';
 })();
 
+var svgRoot = null;
+if ("createElementNS" in document)
+  svgRoot = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
 var supportsSVG = false;
-if( inlineSVG ){
+if (inlineSVG && svgRoot && "width" in svgRoot)
     supportsSVG = true;
-}
 
 var sensordata = new Array();
 var selected_index = new Array();
