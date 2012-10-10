@@ -84,6 +84,19 @@ jQuery.extend(jQuery.mobile.datebox.prototype.options, {
     'overrideHeaderFormat': '%d.%m.%Y'
 });
 
+
+// From the Modernizr source
+var inlineSVG = (function() {
+  var div = document.createElement("div");
+  div.innerHTML = "<svg/>";
+  return (div.firstChild && div.firstChild.namespaceURI) == 'http://www.w3.org/2000/svg';
+})();
+
+var supportsSVG = false;
+if( inlineSVG ){
+    supportsSVG = true;
+}
+
 var sensordata = new Array();
 var selected_index = new Array();
 var histogram = new Array();
@@ -180,7 +193,11 @@ function graphRefresh(query) {
     $.getJSON(query, function(sensors) {
         $('#graphImage').empty();
         $('#sensorStatView').empty();
-        $('#graphImage').append(sensors.graphImage);
+        if (supportsSVG)
+            $('#graphImage').append(sensors.graphImage);
+        else
+            $('#graphImage').append("<img src="+query.replace('json','')+">");
+        
         $.each(sensors.data, function(i, data){
 
             if (data.type == "power") {
@@ -223,9 +240,11 @@ function graphRefresh(query) {
 
 
 function buildGraphQuery(sensors, selected) {
-    imageHeight = $(window).height() - $("#header").height() - $("#footer").height() - 50;
-    imageWidth = $(window).width() - 25;
-    var graphQuery = "graph.php?fullscreen=1&dataFormat=json&";
+    imageHeight = $(window).height() - $("#header").height() - $("#footer").height();
+    imageWidth = $(window).width();
+    var imageFormat = "svg";
+    if (!supportsSVG) imageFormat = "png";
+    var graphQuery = "graph.php?fullscreen=1&dataFormat=json&imageFormat="+imageFormat+"&";
     $.each(sensors, function(i, sensor){
         if (selected[i] == true)
             graphQuery = graphQuery+'sensor[]='+sensor.id+'&';

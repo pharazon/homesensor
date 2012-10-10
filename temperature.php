@@ -131,7 +131,9 @@ class GNUPlot {
     function setTerm($format = '') {
         if ($format != '')
             $this->format = $format;
-        $this->termcommand = "set term $this->format size $this->width,$this->height\n";
+        $term = $this->format;
+        if ($this->format == 'png') $term = 'pngcairo';
+        $this->termcommand = "set term $term size $this->width,$this->height\n";
     }
 
     function getTerm($req = 'array') {
