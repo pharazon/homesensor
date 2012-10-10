@@ -243,8 +243,9 @@ function graphRefresh(query) {
 
 
 function buildGraphQuery(sensors, selected) {
-    imageHeight = $(window).height() - $("#header").height() - $("#footer").height();
+    imageHeight = $(window).height() - $("#header").height();
     imageWidth = $(window).width();
+    if (imageHeight > 600) imageHeight = imageHeight - 2*$("#footer").height();
     var imageFormat = "svg";
     if (!supportsSVG) imageFormat = "png";
     var graphQuery = "graph.php?fullscreen=1&dataFormat=json&imageFormat="+imageFormat+"&";
