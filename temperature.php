@@ -461,30 +461,48 @@ class TemperatureGraph extends GNUPlot
         $this->exe("set xdata time\n");
         $this->exe("set grid xtics 0\n");
         $this->exe("set grid ytics 0\n");
+        $this->exe("set style fill transparent solid 0.5\n");
     }
 
     function addTemperatureData($data)
     {
-        if ($data->isHistogram())
-            $type = "boxes";
-        else
-        {
-            $data->filterSlidingAvg(5);
-            $type = "lines";
-        }
         $this->data[] = $data;
-        if ($data->getSampleCount() == 0) return;
-        if ($data->getType() == "temperature")
+    }
+    
+    function plot()
+    {
+        $plotOrder = array();
+        foreach ($this->data as $data)
         {
-            $this->plotData($data, $type, '1:3', '', "$this->smooth lw $this->linewidth" );
+            if ($data->getType() == "power" or $data->isHistogram())
+                array_unshift($plotOrder, $data);
+            else
+                $plotOrder[] = $data;
         }
-        elseif ($data->getType() == "power")
+
+        foreach ($plotOrder as $data)
         {
-            $this->exe("set y2tics border\n");
-            $this->plotData($data, $type, '1:3', 'x1y2', "$this->smooth lw $this->linewidth" ); 
+            if ($data->isHistogram())
+                $type = "boxes";
+            else
+            {
+                $data->filterSlidingAvg(5);
+                $type = "lines";
+            }
+
+            if ($data->getSampleCount() == 0) return;
+            if ($data->getType() == "temperature")
+            {
+                $this->plotData($data, $type, '1:3', '', "$this->smooth lw $this->linewidth" );
+            }
+            elseif ($data->getType() == "power")
+            {
+                $linewidth = ($data->isHistogram() ? 1 : $this->linewidth);
+                $this->exe("set y2tics border\n");
+                $this->plotData($data, $type, '1:3', 'x1y2', "$this->smooth lw $linewidth" ); 
+            }
         }
     }
-
     function setLineWidth($width)
     {
         $this->linewidth = $width;
@@ -511,6 +529,7 @@ class TemperatureGraph extends GNUPlot
     function getData()
     {
         global $tempDir;
+        $this->plot();
         $filename = tempnam($tempDir, "temperaturepic");
         $this->saveGraphFile($filename);
         while (!file_exists($filename)) {;}
