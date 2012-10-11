@@ -134,7 +134,7 @@ class GNUPlot {
         if ($format == 'svg' or $format == 'png')
             $this->format = $format;
         $term = $this->format;
-        if ($this->format == 'png') $term = 'pngcairo';
+        if ($this->format == 'png') $term = 'pngcairo transparent';
         $this->termcommand = "set term $term size $this->width,$this->height\n";
     }
 
