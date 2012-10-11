@@ -114,9 +114,11 @@ class GNUPlot {
         $this->exe( "set ${dimension}tics $option \n" ); 
     } 
      
-    function setSize( $x, $y, $extra='' ) { 
-        $this->width = $x;
-        $this->height = $y;
+    function setSize( $x, $y, $extra='' ) {
+        if (is_numeric($x) or is_int($x))
+            $this->width = $x;
+        if (is_numeric($y) or is_int($y))
+            $this->height = $y;
         $this->setTerm();
     }
     
@@ -129,7 +131,7 @@ class GNUPlot {
     }
 
     function setTerm($format = '') {
-        if ($format != '')
+        if ($format == 'svg' or $format == 'png')
             $this->format = $format;
         $term = $this->format;
         if ($this->format == 'png') $term = 'pngcairo';
