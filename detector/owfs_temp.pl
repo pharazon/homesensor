@@ -37,9 +37,11 @@ while(@asd = $sth->fetchrow_array) {
 
 for ($i=0; $i<$sensor_count; $i++) {
     #filter out error values
-    if ($lampotila[$i] != 85) {
-  	$query = "insert into tmpmittaukset values ($lampotila[$i], '$sensorid[$i]')";
-	$dbh->do($query);
+    if ($sensorid[$i] ne "") { 
+        if ($lampotila[$i] != 85) {
+            $query = "INSERT INTO tmpmittaukset values ($lampotila[$i], '$sensorid[$i]')";
+            $dbh->do($query);
+        }
     }
 }
 
@@ -50,7 +52,7 @@ $sth->execute()
 	or die "$tuloste\n";
 
 while(@asd= $sth->fetchrow_array) {
-	$dbh->do("insert into Mittaukset  values (NOW(), $asd[0], $asd[1])")
+	$dbh->do("insert into Mittaukset (id,Aika,Anturi,Lampotila) values (0, NOW(), $asd[0], $asd[1])")
 		or die "virhe: $DBI::errstr\n Tuloste: $tuloste";
 }
 
