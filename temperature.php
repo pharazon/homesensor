@@ -310,13 +310,14 @@ class Temperature extends PGData
         if ($this->isHistogram())
         {
             $diff_seconds = $this->endTime->getTimestamp() - $this->startTime->getTimestamp();
-            if ($diff_seconds > 7*86400)
+            if ($diff_seconds > 7*86400) {
                 $this->queryTimeIntervalValues("86400 seconds");
-            else
+            } else {
                 $this->queryTimeIntervalValues("3600 seconds");
-        }
-        else
+            }
+        } else {
             $this->queryValues();
+        }
         $this->queryAvgMinMax();
     }
 
@@ -324,11 +325,18 @@ class Temperature extends PGData
         $intervalobj = DateInterval::createFromDateString($interval);
         $daterange = new DatePeriod($this->startTime, $intervalobj, $this->endTime);
 
-        foreach ($daterange as $date)
-        {
+        foreach ($daterange as $date) {
             $dateEnd = clone $date;
             $dateEnd = $dateEnd->modify($interval);
-            $result = mysql_query ("SELECT AVG(Lampotila) FROM Mittaukset where Anturi = ".mysql_escape_string($this->sensor->id)." and Aika between '".$date->format('Y-m-d H:i:s')."' and '".$dateEnd->format('Y-m-d H:i:s')."'"); 
+            $result = mysql_query (
+                "SELECT
+                    AVG(Lampotila)
+                 FROM Mittaukset
+                 WHERE
+                     Anturi = ".mysql_escape_string($this->sensor->id)."
+                     AND Aika
+                         BETWEEN '".$date->format('Y-m-d H:i:s')."'
+                         AND '".$dateEnd->format('Y-m-d H:i:s')."'");
             $row = mysql_fetch_array($result);
             $value = $row[0]*($intervalobj->format("%s")/3600);
             $this->data[] = array( $date->modify(((int)($intervalobj->format("%s"))/2)." seconds"), $value/1000);
@@ -374,13 +382,20 @@ class Temperature extends PGData
         mysql_query ('DROP TABLE TempTable');
     }
 
-    private function queryAvgMinMax() {
+    protected function queryAvgMinMax() {
         $query =
             "SELECT
                  AVG(Lampotila),
                  MIN(Lampotila),
                  MAX(Lampotila),
-                 (SELECT Lampotila FROM Mittaukset ORDER BY Aika DESC LIMIT 1)
+                 (SELECT Mittaukset.Lampotila
+                      FROM Mittaukset
+                      WHERE
+                           Mittaukset.Anturi = ".mysql_escape_string($this->sensor->id)."
+                           AND Mittaukset.id IS NOT NULL
+                      ORDER BY Mittaukset.id DESC
+                      LIMIT 1
+                 )
              FROM Mittaukset
              WHERE
                  Anturi = ".mysql_escape_string($this->sensor->id)."
@@ -396,8 +411,7 @@ class Temperature extends PGData
         mysql_free_result($result);
     }
 
-    function writeDataFile()
-    {
+    public function writeDataFile() {
         $fp = fopen($this->filename, 'w');
     	if ($fp == FALSE) die("could not open file $this->filename\n");
         foreach ($this->data as $data)
@@ -408,8 +422,7 @@ class Temperature extends PGData
         $this->data = array();
     }
 
-    function filterSlidingAvg($num)
-    {
+    public function filterSlidingAvg($num) {
         $sum = 0;
         $newdata = $this->data;
         for ($i=0; $i<count($this->data); $i++)
@@ -424,19 +437,16 @@ class Temperature extends PGData
         $this->data = $newdata;
     }
 
-    function getAvg() { return $this->avg; }
-    function getSampleCount() { return $this->count; }
-    function getMin() { return $this->min; }
-    function getMax() { return $this->max; }
-    function getLatest() { return $this->latest; }
-    function setStartTime($start) {
-        if ($start < 0)
-        {
+    protected function getAvg() { return $this->avg; }
+    public function getSampleCount() { return $this->count; }
+    protected function getMin() { return $this->min; }
+    protected function getMax() { return $this->max; }
+    protected function getLatest() { return $this->latest; }
+    protected function setStartTime($start) {
+        if (!is_object($start) && !$start instanceof DateTime) {
             $this->startTime = new DateTime("now");
             $this->startTime->modify(-$start." hour ago");
-        }
-        else
-        {
+        } else {
             $this->startTime = $start;
         }
 
@@ -446,9 +456,7 @@ class Temperature extends PGData
         if ($end == "now")
         {
             $this->endTime = new DateTime("now");
-        }
-        else
-        {
+        } else {
             $this->endTime = $end;
         }
     }
@@ -467,6 +475,7 @@ class Temperature extends PGData
     function getDataArray()
     {
         return (array('sensorid' => $this->sensor->id,
+                      'latest' => $this->getLatest(),
                       'avg' => $this->getAvg(),
                       'min' => $this->getMin(),
                       'max' => $this->getMax(),
