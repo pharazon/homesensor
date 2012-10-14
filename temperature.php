@@ -1,4 +1,4 @@
-<?
+<?php
 
 $tempDir = '/tmp/tempdata/';
 
@@ -6,63 +6,68 @@ if (!file_exists($tempDir)) {
   mkdir ( $tempDir,0755);
 }
 
-$hostname = "localhost"; 
-$database = "Lampo"; 
-$username = "root"; 
-$password = ""; 
+$hostname = "localhost";
+$database = "Lampo";
+$username = "root";
+$password = "";
 
 mysql_connect($hostname, $username, $password) or
     die("Could not connect: " . mysql_error());
 mysql_select_db($database);
 
 
-$GNUPLOT = '/usr/bin/gnuplot';  
+$GNUPLOT = '/usr/bin/gnuplot';
 
-class PGData { 
+class PGData {
     var $filename; // Name of the data file. Can be explicitly specified or automatically generated 
-    var $DataList; // This is only useful when $filename is not specified 
+    var $DataList; // This is only useful when $filename is not specified
 
-    /** 
-     * static method to initialize a data object from an external data file 
-     * the object is just a wrapper to the file 
-     **/ 
-    function createFromFile($filename, $legend = '')  { 
-        $Data = new PGData($legend); 
-        if (!file_exists($filename) || !is_readable($filename)) { 
-            print "Error: $filename is not a readable datafile!\n"; 
-            return NULL; 
-        } 
-        $Data->filename = $filename; 
-        return $Data; 
-    } 
+    /**
+     * static method to initialize a data object from an external data file
+     * the object is just a wrapper to the file
+     **/
+    function createFromFile($filename, $legend = '')  {
+        $Data = new PGData($legend);
+        if (!file_exists($filename) || !is_readable($filename)) {
+            print "Error: $filename is not a readable datafile!\n";
+            return NULL;
+        }
+        $Data->filename = $filename;
+        return $Data;
+    }
 
-    function addDataEntry( $entry ){ 
-        if (!$filename) $this->DataList[] = $entry; 
-            else print "Error: Cannot add an entry into file content [ $this->filename ] !\n"; 
-         
-    } 
-     
-    function dumpIntoFile( $filename='' ) { 
-        if ($this->filename) { print "Error: Data file exists [ $this->filename ] !\n"; return; } 
-        global $tempDir; 
-        if (!$filename) { 
-            // generate a file name 
+    function addDataEntry( $entry ) {
+        if (!$filename) {
+            $this->DataList[] = $entry;
+        } else {
+            print "Error: Cannot add an entry into file content [ $this->filename ] !\n";
+        }
+    }
+
+    function dumpIntoFile( $filename='' ) {
+        if ($this->filename) {
+            print "Error: Data file exists [ $this->filename ] !\n";
+            return;
+        }
+        global $tempDir;
+        if (!$filename) {
+            // generate a file name
             $filename = tempnam($tempDir, "data");
-            global $toRemove; 
-            $toRemove[] = $filename; 
-        } 
-        $fp = fopen($filename, 'w'); 
-        foreach( $this->DataList as $entry ) fwrite($fp, implode("\t", $entry)."\n"); 
-        fclose($fp); 
-        $this->filename = $filename; // no longer changeable 
-    } 
-} 
+            global $toRemove;
+            $toRemove[] = $filename;
+        }
+        $fp = fopen($filename, 'w');
+        foreach( $this->DataList as $entry ) fwrite($fp, implode("\t", $entry)."\n");
+        fclose($fp);
+        $this->filename = $filename; // no longer changeable
+    }
+}
 
 
-class GNUPlot { 
-    var $ph = NULL; 
-    var $toRemove; 
-    var $plot; 
+class GNUPlot {
+    var $ph = NULL;
+    var $toRemove;
+    var $plot;
     var $splot;
     var $command;
     var $plotcommand;
@@ -71,22 +76,20 @@ class GNUPlot {
     var $height = 480;
     var $format = 'svg';
 
-    function GNUPlot() { 
-        $this->toRemove = array(); 
-        $this->plot = 'plot'; 
+    function GNUPlot() {
+        $this->toRemove = array();
+        $this->plot = 'plot';
         $this->splot = 'splot';
         $this->command = array();
         $this->plotcommand = array();
-    } 
+    }
 
-    function set2DLabel($labeltext, $x, $y, $justify='', $pre='', $extra='' )  
-    { 
-        // $justify =  {left | center | right} 
-        // $pre = { first|second|graph|screen } 
+    function set2DLabel($labeltext, $x, $y, $justify='', $pre='', $extra='' ) {
+        // $justify =  {left | center | right}
+        // $pre = { first|second|graph|screen }
 
-        $this->exe( "set label \"". $labeltext ."\" at $pre $x,$y $extra\n"); 
-    } 
-     
+        $this->exe( "set label \"". $labeltext ."\" at $pre $x,$y $extra\n");
+    }
 
     function setRange( $dimension, $min, $max, $extra='' ) { 
         // $dimension = x, y, z ...... 
@@ -115,10 +118,12 @@ class GNUPlot {
     } 
      
     function setSize( $x, $y, $extra='' ) {
-        if (is_numeric($x) or is_int($x))
+        if (is_numeric($x) or is_int($x)) {
             $this->width = $x;
-        if (is_numeric($y) or is_int($y))
+        }
+        if (is_numeric($y) or is_int($y)) {
             $this->height = $y;
+        }
         $this->setTerm();
     }
     
@@ -131,10 +136,13 @@ class GNUPlot {
     }
 
     function setTerm($format = '') {
-        if ($format == 'svg' or $format == 'png')
+        if ($format == 'svg' or $format == 'png') {
             $this->format = $format;
+        }
         $term = $this->format;
-        if ($this->format == 'png') $term = 'pngcairo transparent';
+        if ($this->format == 'png') {
+            $term = 'pngcairo transparent';
+        }
         $this->termcommand = "set term $term size $this->width,$this->height\n";
     }
 
@@ -223,31 +231,40 @@ class Sensor
     static function get_sensor_array()
     {
         //select Anturit.Anturi,Anturit.nimi, Mittaukset.Lampotila from  Mittaukset inner join Anturit on Anturit.Anturi = Mittaukset.Anturi where Anturit.Anturi = 3 order by Mittaukset.Aika desc limit 1;
-        $result = mysql_query("select Anturi, nimi, type, unit from Anturit order by Anturi");
+        $result = mysql_query("SELECT Anturi, nimi, type, unit FROM Anturit ORDER BY Anturi");
         $i = 0;
         while ($row = mysql_fetch_array($result))
         {
-            $q = mysql_query("select Lampotila from Mittaukset where Anturi =".mysql_escape_string($row['Anturi'])." order by Aika desc limit 1");
+            $q = mysql_query("SELECT Lampotila FROM Mittaukset WHERE Anturi =".mysql_escape_string($row['Anturi'])." ORDER BY Aika DESC LIMIT 1");
             $valrow = mysql_fetch_row($q);
             mysql_free_result($q);
             $value = $valrow[0];
-            if (!strcmp($row['type'],"power")) $value = (int) $value;
-            $sensors[$i] = new Sensor($row['Anturi'], $row['nimi'], $row['type'], $row['unit'], $value);
+            if (!strcmp($row['type'],"power")) {
+                $value = (int) $value;
+            }
+            $sensors[$i] = new Sensor(
+                $row['Anturi'],
+                utf8_encode($row['nimi']),
+                $row['type'],
+                utf8_encode($row['unit']),
+                $value
+            );
             $i++;
         }
         mysql_free_result($result);
         return $sensors;
     }
-    
+
     static function find_id($sensors, $id)
     {
         foreach($sensors as $sensor)
         {
-            if ($sensor->id == $id)
+            if ($sensor->id == $id) {
                 return $sensor;
+            }
         }
         return 0;
-    } 
+    }
 
 }
 
@@ -566,7 +583,3 @@ class TemperatureGraph extends GNUPlot
         $this->export($filename);
     }
 }
-
-
-
-?>
