@@ -480,8 +480,8 @@ class TemperatureGraph extends GNUPlot
         $this->exe("set timefmt \"%Y-%m-%d %H:%M:%S\"\n");
         $this->exe("set format x \"%d.%m\\\\n%H:%M\"\n");
         $this->exe("set xdata time\n");
-        $this->exe("set grid xtics 0\n");
-        $this->exe("set grid ytics 0\n");
+        $this->exe("set grid xtics\n");
+        $this->exe("set grid ytics\n");
         $this->exe("set style fill transparent solid 0.5\n");
     }
 
@@ -565,10 +565,14 @@ class TemperatureGraph extends GNUPlot
         {
             $dataArray[] = $data->getDataArray();
         }
-        
+
         $format = $this->getTerm('format');
 
-        $array = array('graphImage' => $this->getData(), 'format' => 'svg', 'data' => $dataArray);
+        $array = array(
+                     'graphImage' => $this->getData(),
+                     'format' => 'svg',
+                     'data' => $dataArray
+                 );
 
         return $array;
     }

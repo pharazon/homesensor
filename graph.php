@@ -1,8 +1,19 @@
-<?
+<?php
 require "temperature.php";
 
-$selectRequestVariables = array("hours","sensor","width","height", "fullscreen", "dataFormat", "imageFormat", "dateStart", "dateEnd", "histogram");
-foreach($selectRequestVariables as $selectRequestVar) {
+$selectRequestVariables = array(
+                              "hours",
+                              "sensor",
+                              "width",
+                              "height",
+                              "fullscreen",
+                              "dataFormat",
+                              "imageFormat",
+                              "dateStart",
+                              "dateEnd",
+                              "histogram",
+                          );
+foreach ($selectRequestVariables as $selectRequestVar) {
     eval('$GLOBALS["'.$selectRequestVar.'"] = $'.
         $selectRequestVar.' = isset($_REQUEST["'.
         $selectRequestVar.'"]) ? $_REQUEST["'.
@@ -20,17 +31,17 @@ if ($fullscreen == "") $fullscreen = false;
 
 $sensors = Sensor::get_sensor_array();
 
-
 foreach ($sensor as $id) {
-    if (in_array($id, $histogram))
+    if (in_array($id, $histogram)) {
         $_histogram = True;
-    else
+    } else {
         $_histogram = False;
-    
+    }
+
     $sensorobj = Sensor::find_id($sensors, $id);
-    if (!$dateStart && !$dateEnd)
+    if (!$dateStart && !$dateEnd) {
         $sensorData[] = new Temperature($sensorobj, -$hours, 'now', $_histogram);
-    else {
+    } else {
         $_dateStart = date_create_from_format('Y-m-d-H-i-s', $dateStart);
         $_dateEnd   = date_create_from_format('Y-m-d-H-i-s', $dateEnd);
         $sensorData[] = new Temperature($sensorobj, $_dateStart, $_dateEnd, $_histogram);
@@ -65,4 +76,3 @@ if ($dataFormat == "json") {
     header('Content-type: application/json');
     echo $graph->getJSONData();
 }
-?>
