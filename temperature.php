@@ -272,19 +272,20 @@ class Sensor
 
 class Temperature extends PGData
 {
-    var $dateformat = 'Y-m-d H:i:s';
-    var $endTime;
-    var $startTime;
-    var $sensor    = array();
-    var $avg       = 0;    
-    var $numRows;
-    var $min       = 0;
-    var $max       = 0;
-    var $filename;
-    var $count     = 0;
-    var $data      = array();
-    var $histogram = False;
-    
+    protected $dateformat = 'Y-m-d H:i:s';
+    protected $endTime;
+    protected $startTime;
+    protected $sensor    = array();
+    protected $avg       = 0;
+    protected $numRows;
+    protected $min       = 0;
+    protected $max       = 0;
+    protected $latest    = 0;
+    public $filename;
+    protected $count     = 0;
+    protected $data      = array();
+    protected $histogram = False;
+
     function __construct($sensor, $start, $end, $histogram)
     {
         global $tempDir;
@@ -304,7 +305,7 @@ class Temperature extends PGData
             unlink($this->filename);
     }
 
-    private function runQuery()
+    protected function runQuery()
     {
         if ($this->isHistogram())
         {
@@ -319,10 +320,10 @@ class Temperature extends PGData
         $this->queryAvgMinMax();
     }
 
-    private function queryTimeIntervalValues($interval) {
+    protected function queryTimeIntervalValues($interval) {
         $intervalobj = DateInterval::createFromDateString($interval);
         $daterange = new DatePeriod($this->startTime, $intervalobj, $this->endTime);
-    
+
         foreach ($daterange as $date)
         {
             $dateEnd = clone $date;
@@ -336,21 +337,26 @@ class Temperature extends PGData
         }
     }
 
-    private function queryValues() {
-        $query=
-        "select Aika, Lampotila from Mittaukset
-         where Anturi = ".mysql_escape_string($this->sensor->id)." 
-         and Aika between '".$this->startTime->format('Y-m-d H:i:s')."'
-         and '".$this->endTime->format('Y-m-d H:i:s')."'";
+    protected function queryValues() {
+        $query =
+           "SELECT
+                Aika,
+                Lampotila
+            FROM Mittaukset
+            WHERE
+                Anturi = ".mysql_escape_string($this->sensor->id)."
+                AND Aika
+                    BETWEEN '".$this->startTime->format('Y-m-d H:i:s')."'
+                    AND '".$this->endTime->format('Y-m-d H:i:s')."'";
 
-        /* 
+        /*
         Use unbuffered_query to speed up large queries by not loading the whole
         result to php side. Use temporary table to limit locking of database.
         Also make simple downsampling to limit memory usage both on server and client.
-        */        
+        */
         mysql_query ("CREATE TEMPORARY TABLE TempTable $query");
         $this->count = mysql_affected_rows();
-        $result = mysql_unbuffered_query ('SELECT Aika, Lampotila FROM TempTable'); 
+        $result = mysql_unbuffered_query ('SELECT Aika, Lampotila FROM TempTable');
         $skiprows = floor($this->count/2000);
         if ($skiprows < 1) $skiprows = 1;
         for ($currentrow=0,$selectedrow=0; $currentrow<$this->count; $currentrow++)
@@ -365,20 +371,28 @@ class Temperature extends PGData
             }
         }
         mysql_free_result($result);
-        mysql_query ('DROP TABLE TempTable'); 
+        mysql_query ('DROP TABLE TempTable');
     }
 
     private function queryAvgMinMax() {
-        $query=
-        "select AVG(Lampotila), MIN(Lampotila), MAX(Lampotila) from Mittaukset
-         where Anturi = ".mysql_escape_string($this->sensor->id)." 
-         and Aika between '".$this->startTime->format('Y-m-d H:i:s')."'
-         and '".$this->endTime->format('Y-m-d H:i:s')."'";
+        $query =
+            "SELECT
+                 AVG(Lampotila),
+                 MIN(Lampotila),
+                 MAX(Lampotila),
+                 (SELECT Lampotila FROM Mittaukset ORDER BY Aika DESC LIMIT 1)
+             FROM Mittaukset
+             WHERE
+                 Anturi = ".mysql_escape_string($this->sensor->id)."
+                 AND Aika
+                     BETWEEN '".$this->startTime->format('Y-m-d H:i:s')."'
+                     AND '".$this->endTime->format('Y-m-d H:i:s')."'";
         $result = mysql_query($query);
         $row = mysql_fetch_array($result);
-        $this->avg = $row[0];
-        $this->min = $row[1];
-        $this->max = $row[2];
+        $this->avg = number_format($row[0],2);
+        $this->min = number_format($row[1],2);
+        $this->max = number_format($row[2],2);
+        $this->latest = number_format($row[3],2);
         mysql_free_result($result);
     }
 
@@ -409,11 +423,12 @@ class Temperature extends PGData
         }
         $this->data = $newdata;
     }
-    
+
     function getAvg() { return $this->avg; }
     function getSampleCount() { return $this->count; }
     function getMin() { return $this->min; }
     function getMax() { return $this->max; }
+    function getLatest() { return $this->latest; }
     function setStartTime($start) {
         if ($start < 0)
         {
