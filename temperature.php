@@ -387,15 +387,7 @@ class Temperature extends PGData
             "SELECT
                  AVG(Lampotila),
                  MIN(Lampotila),
-                 MAX(Lampotila),
-                 (SELECT Mittaukset.Lampotila
-                      FROM Mittaukset
-                      WHERE
-                           Mittaukset.Anturi = ".mysql_escape_string($this->sensor->id)."
-                           AND Mittaukset.id IS NOT NULL
-                      ORDER BY Mittaukset.id DESC
-                      LIMIT 1
-                 )
+                 MAX(Lampotila)
              FROM Mittaukset
              WHERE
                  Anturi = ".mysql_escape_string($this->sensor->id)."
@@ -407,7 +399,6 @@ class Temperature extends PGData
         $this->avg = number_format($row[0],2);
         $this->min = number_format($row[1],2);
         $this->max = number_format($row[2],2);
-        $this->latest = number_format($row[3],2);
         mysql_free_result($result);
     }
 
@@ -441,7 +432,7 @@ class Temperature extends PGData
     public function getSampleCount() { return $this->count; }
     protected function getMin() { return $this->min; }
     protected function getMax() { return $this->max; }
-    protected function getLatest() { return $this->latest; }
+    protected function getLatest() { return number_format($this->sensor->value, 2); }
     protected function setStartTime($start) {
         if (!is_object($start) && !$start instanceof DateTime) {
             $this->startTime = new DateTime("now");
