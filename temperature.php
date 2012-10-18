@@ -218,16 +218,23 @@ class Sensor
     var $id;
     var $name;
     var $type;
-    
+
     function __construct($id, $name, $type, $unit, $value)
     {
         $this->id = $id;
-        $this->name = $name;
+        $this->name = $this->str_encode_utf8($name);
         $this->type = $type;
-        $this->unit = $unit;
+        $this->unit = $this->str_encode_utf8($unit);
         $this->value = $value;
     }
-    
+
+    private function str_encode_utf8($string) {
+        if (mb_detect_encoding($string, 'UTF-8', true) === FALSE) {
+            $string = utf8_encode($string);
+        }
+        return $string; 
+    }
+
     static function get_sensor_array()
     {
         //select Anturit.Anturi,Anturit.nimi, Mittaukset.Lampotila from  Mittaukset inner join Anturit on Anturit.Anturi = Mittaukset.Anturi where Anturit.Anturi = 3 order by Mittaukset.Aika desc limit 1;
@@ -244,9 +251,9 @@ class Sensor
             }
             $sensors[$i] = new Sensor(
                 $row['Anturi'],
-                utf8_encode($row['nimi']),
+                $row['nimi'],
                 $row['type'],
-                utf8_encode($row['unit']),
+                $row['unit'],
                 $value
             );
             $i++;
@@ -387,15 +394,7 @@ class Temperature extends PGData
             "SELECT
                  AVG(Lampotila),
                  MIN(Lampotila),
-                 MAX(Lampotila),
-                 (SELECT Mittaukset.Lampotila
-                      FROM Mittaukset
-                      WHERE
-                           Mittaukset.Anturi = ".mysql_escape_string($this->sensor->id)."
-                           AND Mittaukset.id IS NOT NULL
-                      ORDER BY Mittaukset.id DESC
-                      LIMIT 1
-                 )
+                 MAX(Lampotila)
              FROM Mittaukset
              WHERE
                  Anturi = ".mysql_escape_string($this->sensor->id)."
@@ -407,7 +406,6 @@ class Temperature extends PGData
         $this->avg = number_format($row[0],2);
         $this->min = number_format($row[1],2);
         $this->max = number_format($row[2],2);
-        $this->latest = number_format($row[3],2);
         mysql_free_result($result);
     }
 
@@ -441,7 +439,7 @@ class Temperature extends PGData
     public function getSampleCount() { return $this->count; }
     protected function getMin() { return $this->min; }
     protected function getMax() { return $this->max; }
-    protected function getLatest() { return $this->latest; }
+    protected function getLatest() { return number_format($this->sensor->value, 2); }
     protected function setStartTime($start) {
         if (!is_object($start) && !$start instanceof DateTime) {
             $this->startTime = new DateTime("now");
@@ -497,6 +495,7 @@ class TemperatureGraph extends GNUPlot
     var $linewidth = 2;
     var $smooth = '';//'smooth csplines';
     var $dataFormat = 'json';
+    var $filename;
     
     function __construct()
     {
@@ -507,6 +506,14 @@ class TemperatureGraph extends GNUPlot
         $this->exe("set grid xtics\n");
         $this->exe("set grid ytics\n");
         $this->exe("set style fill transparent solid 0.5\n");
+        global $tempDir;
+        $this->filename = tempnam($tempDir, "temperaturepic");
+    }
+
+    function __destruct()
+    {
+        if (file_exists($this->filename) and $this->getTerm('format') == 'svg' )
+            unlink($this->filename);
     }
 
     function addTemperatureData($data)
@@ -573,14 +580,15 @@ class TemperatureGraph extends GNUPlot
 
     function getData()
     {
-        global $tempDir;
         $this->plot();
-        $filename = tempnam($tempDir, "temperaturepic");
-        $this->saveGraphFile($filename);
-        while (!file_exists($filename)) {;}
-        $string = file_get_contents($filename);
-        unlink($filename);
-        return $string;
+        $this->saveGraphFile($this->filename);
+        if ($this->getTerm('format') == 'svg') {
+            while (!file_exists($this->filename)) {;}
+            $string = file_get_contents($this->filename);
+            return $string;
+        } else {
+            return substr(basename($this->filename),14) ;
+        }
     }
 
     function getDataArray()
@@ -594,7 +602,7 @@ class TemperatureGraph extends GNUPlot
 
         $array = array(
                      'graphImage' => $this->getData(),
-                     'format' => 'svg',
+                     'format' => $format,
                      'data' => $dataArray
                  );
 

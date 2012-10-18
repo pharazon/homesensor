@@ -11,7 +11,7 @@
     <link rel="stylesheet" type="text/css" href="css/jqm-datebox.css" />
     <script type="text/javascript" src="js/jqm-datebox.core.js"></script>
     <script type="text/javascript" src="js/jqm-datebox.mode.calbox.js"></script>
-    <script type="text/javascript" src="js/i8n/jquery.mobile.datebox.i18n.en-GB.js"></script> 
+    <script type="text/javascript" src="js/i8n/jquery.mobile.datebox.i18n.fi.utf8.js"></script> 
 </head> 
 <body> 
 
@@ -196,10 +196,10 @@ function graphRefresh(query) {
     $.getJSON(query, function(sensors) {
         $('#graphImage').empty();
         $('#sensorStatView').empty();
-        if (supportsSVG)
+        if (sensors.format == "svg")
             $('#graphImage').append(sensors.graphImage);
         else
-            $('#graphImage').append("<img src="+query.replace('json','')+">");
+            $('#graphImage').append("<img src=get.php?fileid="+sensors.graphImage+">");
         
         $.each(sensors.data, function(i, data){
 
