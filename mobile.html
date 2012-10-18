@@ -196,10 +196,10 @@ function graphRefresh(query) {
     $.getJSON(query, function(sensors) {
         $('#graphImage').empty();
         $('#sensorStatView').empty();
-        if (supportsSVG)
+        if (sensors.format == "svg")
             $('#graphImage').append(sensors.graphImage);
         else
-            $('#graphImage').append("<img src="+query.replace('json','')+">");
+            $('#graphImage').append("<img src=get.php?fileid="+sensors.graphImage+">");
         
         $.each(sensors.data, function(i, data){
 

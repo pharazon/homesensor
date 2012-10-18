@@ -495,6 +495,7 @@ class TemperatureGraph extends GNUPlot
     var $linewidth = 2;
     var $smooth = '';//'smooth csplines';
     var $dataFormat = 'json';
+    var $filename;
     
     function __construct()
     {
@@ -505,6 +506,14 @@ class TemperatureGraph extends GNUPlot
         $this->exe("set grid xtics\n");
         $this->exe("set grid ytics\n");
         $this->exe("set style fill transparent solid 0.5\n");
+        global $tempDir;
+        $this->filename = tempnam($tempDir, "temperaturepic");
+    }
+
+    function __destruct()
+    {
+        if (file_exists($this->filename) and $this->getTerm('format') == 'svg' )
+            unlink($this->filename);
     }
 
     function addTemperatureData($data)
@@ -571,14 +580,15 @@ class TemperatureGraph extends GNUPlot
 
     function getData()
     {
-        global $tempDir;
         $this->plot();
-        $filename = tempnam($tempDir, "temperaturepic");
-        $this->saveGraphFile($filename);
-        while (!file_exists($filename)) {;}
-        $string = file_get_contents($filename);
-        unlink($filename);
-        return $string;
+        $this->saveGraphFile($this->filename);
+        if ($this->getTerm('format') == 'svg') {
+            while (!file_exists($this->filename)) {;}
+            $string = file_get_contents($this->filename);
+            return $string;
+        } else {
+            return substr(basename($this->filename),14) ;
+        }
     }
 
     function getDataArray()
@@ -592,7 +602,7 @@ class TemperatureGraph extends GNUPlot
 
         $array = array(
                      'graphImage' => $this->getData(),
-                     'format' => 'svg',
+                     'format' => $format,
                      'data' => $dataArray
                  );
 
