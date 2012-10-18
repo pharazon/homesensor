@@ -218,16 +218,23 @@ class Sensor
     var $id;
     var $name;
     var $type;
-    
+
     function __construct($id, $name, $type, $unit, $value)
     {
         $this->id = $id;
-        $this->name = $name;
+        $this->name = $this->str_encode_utf8($name);
         $this->type = $type;
-        $this->unit = $unit;
+        $this->unit = $this->str_encode_utf8($unit);
         $this->value = $value;
     }
-    
+
+    private function str_encode_utf8($string) {
+        if (mb_detect_encoding($string, 'UTF-8', true) === FALSE) {
+            $string = utf8_encode($string);
+        }
+        return $string; 
+    }
+
     static function get_sensor_array()
     {
         //select Anturit.Anturi,Anturit.nimi, Mittaukset.Lampotila from  Mittaukset inner join Anturit on Anturit.Anturi = Mittaukset.Anturi where Anturit.Anturi = 3 order by Mittaukset.Aika desc limit 1;
@@ -244,9 +251,9 @@ class Sensor
             }
             $sensors[$i] = new Sensor(
                 $row['Anturi'],
-                utf8_encode($row['nimi']),
+                $row['nimi'],
                 $row['type'],
-                utf8_encode($row['unit']),
+                $row['unit'],
                 $value
             );
             $i++;
