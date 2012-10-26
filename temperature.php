@@ -489,7 +489,7 @@ class Temperature extends PGData
 }
 
 
-class TemperatureGraph extends GNUPlot
+class Graph extends GNUPlot
 {
     var $data;
     var $linewidth = 2;
@@ -500,11 +500,6 @@ class TemperatureGraph extends GNUPlot
     function __construct()
     {
         parent::__construct();
-        $this->exe("set timefmt \"%Y-%m-%d %H:%M:%S\"\n");
-        $this->exe("set format x \"%d.%m\\\\n%H:%M\"\n");
-        $this->exe("set xdata time\n");
-        $this->exe("set grid xtics\n");
-        $this->exe("set grid ytics\n");
         $this->exe("set style fill transparent solid 0.5\n");
         global $tempDir;
         $this->filename = tempnam($tempDir, "temperaturepic");
@@ -523,38 +518,9 @@ class TemperatureGraph extends GNUPlot
     
     function plot()
     {
-        $plotOrder = array();
-        foreach ($this->data as $data)
-        {
-            if ($data->getType() == "power" or $data->isHistogram())
-                array_unshift($plotOrder, $data);
-            else
-                $plotOrder[] = $data;
-        }
-
-        foreach ($plotOrder as $data)
-        {
-            if ($data->isHistogram())
-                $type = "boxes";
-            else
-            {
-                $data->filterSlidingAvg(5);
-                $type = "lines";
-            }
-
-            if ($data->getSampleCount() == 0) return;
-            if ($data->getType() == "temperature")
-            {
-                $this->plotData($data, $type, '1:3', '', "$this->smooth lw $this->linewidth" );
-            }
-            elseif ($data->getType() == "power")
-            {
-                $linewidth = ($data->isHistogram() ? 1 : $this->linewidth);
-                $this->exe("set y2tics border\n");
-                $this->plotData($data, $type, '1:3', 'x1y2', "$this->smooth lw $linewidth" ); 
-            }
-        }
+        // Virtual
     }
+
     function setLineWidth($width)
     {
         $this->linewidth = $width;
@@ -617,5 +583,54 @@ class TemperatureGraph extends GNUPlot
     function saveGraphFile($filename)
     {
         $this->export($filename);
+    }
+}
+
+class TimeSeriesGraph extends Graph
+{
+    
+    function __construct()
+    {
+        parent::__construct();
+        $this->exe("set timefmt \"%Y-%m-%d %H:%M:%S\"\n");
+        $this->exe("set format x \"%d.%m\\\\n%H:%M\"\n");
+        $this->exe("set xdata time\n");
+        $this->exe("set grid xtics\n");
+        $this->exe("set grid ytics\n");
+    }
+
+    function plot()
+    {
+        $plotOrder = array();
+        foreach ($this->data as $data)
+        {
+            if ($data->getType() == "power" or $data->isHistogram())
+                array_unshift($plotOrder, $data);
+            else
+                $plotOrder[] = $data;
+        }
+
+        foreach ($plotOrder as $data)
+        {
+            if ($data->isHistogram())
+                $type = "boxes";
+            else
+            {
+                $data->filterSlidingAvg(5);
+                $type = "lines";
+            }
+
+            if ($data->getSampleCount() == 0) return;
+            if ($data->getType() == "temperature")
+            {
+                $this->plotData($data, $type, '1:3', '', "$this->smooth lw $this->linewidth" );
+            }
+            elseif ($data->getType() == "power")
+            {
+                $linewidth = ($data->isHistogram() ? 1 : $this->linewidth);
+                $this->exe("set y2tics border\n");
+                $this->plotData($data, $type, '1:3', 'x1y2', "$this->smooth lw $linewidth" ); 
+            }
+        }
     }
 }
