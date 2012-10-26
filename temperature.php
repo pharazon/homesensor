@@ -487,6 +487,11 @@ class Graph extends GNUPlot
     {
         parent::__construct();
         $this->exe("set style fill transparent solid 0.5\n");
+        $this->exe("set tics font \"arial,10\"\n");
+        $this->exe("set lmargin 4\n");
+        $this->exe("set rmargin 8\n");
+        $this->exe("set tmargin 0.5\n");
+        //$this->exe("set bmargin 0\n");
         global $tempDir;
         $this->filename = tempnam($tempDir, "temperaturepic");
     }
