@@ -19,48 +19,35 @@ mysql_select_db($database);
 $GNUPLOT = '/usr/bin/gnuplot';
 
 class PGData {
-    var $filename; // Name of the data file. Can be explicitly specified or automatically generated 
-    var $DataList; // This is only useful when $filename is not specified
+    var $filename; 
+    var $DataList = array();
 
-    /**
-     * static method to initialize a data object from an external data file
-     * the object is just a wrapper to the file
-     **/
-    function createFromFile($filename, $legend = '')  {
-        $Data = new PGData($legend);
-        if (!file_exists($filename) || !is_readable($filename)) {
-            print "Error: $filename is not a readable datafile!\n";
-            return NULL;
-        }
-        $Data->filename = $filename;
-        return $Data;
+    function __construct()
+    {
+        global $tempDir;
+        $this->filename = tempnam($tempDir, "temperaturedata");
+    }
+
+    function __destruct()
+    {
+        if (file_exists($this->filename))
+            unlink($this->filename);
     }
 
     function addDataEntry( $entry ) {
-        if (!$filename) {
-            $this->DataList[] = $entry;
-        } else {
-            print "Error: Cannot add an entry into file content [ $this->filename ] !\n";
-        }
+        $this->DataList[] = $entry;
     }
 
-    function dumpIntoFile( $filename='' ) {
-        if ($this->filename) {
-            print "Error: Data file exists [ $this->filename ] !\n";
-            return;
-        }
-        global $tempDir;
-        if (!$filename) {
-            // generate a file name
-            $filename = tempnam($tempDir, "data");
-            global $toRemove;
-            $toRemove[] = $filename;
-        }
-        $fp = fopen($filename, 'w');
+    function writeDataFile() {
+        $fp = fopen($this->filename, 'w');
         foreach( $this->DataList as $entry ) fwrite($fp, implode("\t", $entry)."\n");
         fclose($fp);
-        $this->filename = $filename; // no longer changeable
     }
+    
+    function getName() {}
+    function getUnit() {}
+    function getStartTime() {}
+    function getEndTime() {}
 }
 
 
@@ -177,10 +164,10 @@ class GNUPlot {
 
         $fn = $PGData->filename; 
         $title = $PGData->getName()." (".$PGData->getUnit().")";
-        if (count($this->plotcommand) == 0)
+
+        $range = '';
+        if (count($this->plotcommand) == 0 and strlen($PGData->getStartTime())>1)
             $range =" [\"".$PGData->getStartTime()."\":\"".$PGData->getEndTime()."\"] ";
-        else
-            $range = '';
 
         if ($axes) $axes = " axes $axes "; 
         $this->plotcommand[] = " $range \"$fn\" using $using $axes title \"$title\" with $method $extra"; 
@@ -288,28 +275,19 @@ class Temperature extends PGData
     protected $min       = 0;
     protected $max       = 0;
     protected $latest    = 0;
-    public $filename;
     protected $count     = 0;
     protected $data      = array();
     protected $histogram = False;
 
     function __construct($sensor, $start, $end, $histogram)
     {
-        global $tempDir;
-        $this->filename = tempnam($tempDir, "temperaturedata");
+        parent::__construct();
         $this->sensor = $sensor;
         $this->name = $this->sensor->name;
         $this->histogram = $histogram;
         $this->setEndTime($end);
         $this->setStartTime($start);
         $this->runQuery();
-//        $this->writeDataFile();
-    }
-
-    function __destruct()
-    {
-        if (file_exists($this->filename))
-            unlink($this->filename);
     }
 
     protected function runQuery()
@@ -345,8 +323,15 @@ class Temperature extends PGData
                          BETWEEN '".$date->format('Y-m-d H:i:s')."'
                          AND '".$dateEnd->format('Y-m-d H:i:s')."'");
             $row = mysql_fetch_array($result);
-            $value = $row[0]*($intervalobj->format("%s")/3600);
-            $this->data[] = array( $date->modify(((int)($intervalobj->format("%s"))/2)." seconds"), $value/1000);
+            $date->modify(((int)($intervalobj->format("%s"))/2)." seconds");
+            if ($this->sensor->type == "power") {
+                $value = $row[0]*($intervalobj->format("%s")/3600);
+                $this->data[] = array($date , $value/1000);
+            } else {
+                $value = $row[0];
+                $this->data[] = array($date , $value);
+            }
+
             $this->count += mysql_affected_rows();
             mysql_free_result($result);
         }
@@ -435,6 +420,7 @@ class Temperature extends PGData
         $this->data = $newdata;
     }
 
+    public function getValues() { return $this->data; }
     protected function getAvg() { return $this->avg; }
     public function getSampleCount() { return $this->count; }
     protected function getMin() { return $this->min; }
@@ -631,6 +617,49 @@ class TimeSeriesGraph extends Graph
                 $this->exe("set y2tics border\n");
                 $this->plotData($data, $type, '1:3', 'x1y2', "$this->smooth lw $linewidth" ); 
             }
+        }
+    }
+}
+
+class XYGraph extends Graph
+{
+    var $xydata;
+    
+    function __construct()
+    {
+        parent::__construct();
+        $this->exe("set grid xtics\n");
+        $this->exe("set grid ytics\n");
+        $this->xydata = new PGData();
+    }
+
+    function plot()
+    {
+        $this->createXYData();
+        $this->plotData($this->xydata, 'points', '1:2', 'x1y1','' ); 
+    }
+    
+    private function createXYData()
+    {
+        if (count($this->data) < 2) return;
+
+        $xdata  = array();
+        $ydata  = array();
+        $xarr   = $this->data[0]->getValues();
+        $yarr   = $this->data[1]->getValues();
+        foreach ($xarr as $x)
+        {
+            $xdata[] = $x[1];
+        }
+
+        foreach ($yarr as $y)
+        {
+            $ydata[] = $y[1];
+        }
+
+        for ($i=0;$i<count($xarr);$i++)
+        {
+            $this->xydata->addDataEntry(array($xdata[$i], $ydata[$i]));
         }
     }
 }
