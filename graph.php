@@ -48,7 +48,7 @@ foreach ($sensor as $id) {
     }
 }
 
-$graph = new TemperatureGraph();
+$graph = new TimeSeriesGraph();
 foreach ($sensorData as $s) {
         $graph->addTemperatureData($s);
 }
