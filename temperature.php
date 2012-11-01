@@ -175,8 +175,9 @@ class GNUPlot {
 
     function export( $pic_filename ) { 
         global $GNUPLOT;
+        global $tempDir;
 
-        $command = "'".$this->termcommand;
+        $command = $this->termcommand;
 
         foreach ($this->command as $row)
             $command .= $row;
@@ -186,10 +187,12 @@ class GNUPlot {
             $command .= $plot.",";
         $command = substr($command,0,-1);
         $command .= "\n";
-
-
-        $command .=   "'| $GNUPLOT > $pic_filename";
-        passthru("echo ".$command);
+        $gnuplotfile = tempnam($tempDir, "gnuplot");
+        $fp = fopen($gnuplotfile, 'w');
+        fwrite($fp, $command);
+        passthru("$GNUPLOT $gnuplotfile > $pic_filename");
+        fclose($fp);
+        unlink($gnuplotfile);
     } 
 
     function exe( $command ) {
@@ -584,7 +587,7 @@ class TimeSeriesGraph extends Graph
     {
         parent::__construct();
         $this->exe("set timefmt \"%Y-%m-%d %H:%M:%S\"\n");
-        $this->exe("set format x \"%d.%m\\\\n%H:%M\"\n");
+        $this->exe("set format x \"%d.%m\\n%H:%M\"\n");
         $this->exe("set xdata time\n");
         $this->exe("set grid xtics\n");
         $this->exe("set grid ytics\n");
