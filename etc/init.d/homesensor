@@ -1,0 +1,3 @@
+#!/bin/bash
+HOMESENSOR_HOME=/home/homesensor
+screen -S homesensor -d -m python $HOMESENSOR_HOME/detector/detector.py
