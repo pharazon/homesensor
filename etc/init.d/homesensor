@@ -1,3 +1,4 @@
 #!/bin/bash
+#TODO Debian says: insserv: warning: script 'homesensor' missing LSB tags and overrides
 HOMESENSOR_HOME=/home/homesensor
 screen -S homesensor -d -m python $HOMESENSOR_HOME/detector/detector.py
