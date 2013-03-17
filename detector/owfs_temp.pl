@@ -20,12 +20,13 @@ $dbpasswd = "";
 $dbh = DBI->connect("DBI:mysql:$dbname", $dbuser, $dbpasswd)
     or die "can't connect: $DBI::errstr\n";
 
-$sth = $dbh->prepare("select sensorid from Anturit");
+$sth = $dbh->prepare("select sensorid,type from Anturit");
 $sth->execute() or die "\n";
 
 $sensor_count = 0;
 while(@asd = $sth->fetchrow_array) {
-	open(TEMPERATURE, "/digitemp/".$asd[0]."/temperature");
+#print $asd[0];
+	open(TEMPERATURE, "/digitemp/" . $asd[0] . "/" . $asd[1]);
 	$str = <TEMPERATURE>;
 	chomp $str;
 	$lampotila[$sensor_count] = trim($str);
@@ -39,7 +40,7 @@ for ($i=0; $i<$sensor_count; $i++) {
     #filter out error values
     if ($sensorid[$i] ne "") { 
         if ($lampotila[$i] != 85) {
-            $query = "INSERT INTO tmpmittaukset values ($lampotila[$i], '$sensorid[$i]')";
+            $query = "INSERT INTO tmpmittaukset values ($lampotila[$i], '" . $sensorid[$i] . "')";
             $dbh->do($query);
         }
     }
