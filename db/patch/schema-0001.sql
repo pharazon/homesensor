@@ -19,10 +19,10 @@
 -- Table structure for table `Anturit`
 --
 
-DROP TABLE IF EXISTS `Anturit`;
+-- DROP TABLE IF EXISTS `Anturit`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Anturit` (
+CREATE TABLE IF NOT EXISTS `Anturit` (
   `Anturi` mediumint(8) NOT NULL DEFAULT '0',
   `nimi` char(20) DEFAULT NULL,
   `sensorid` char(40) DEFAULT NULL,
@@ -36,10 +36,10 @@ CREATE TABLE `Anturit` (
 -- Table structure for table `Mittaukset`
 --
 
-DROP TABLE IF EXISTS `Mittaukset`;
+-- DROP TABLE IF EXISTS `Mittaukset`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Mittaukset` (
+CREATE TABLE IF NOT EXISTS `Mittaukset` (
   `Aika` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `Anturi` mediumint(2) NOT NULL DEFAULT '0',
   `Lampotila` decimal(7,2) DEFAULT NULL,
@@ -54,10 +54,10 @@ CREATE TABLE `Mittaukset` (
 -- Table structure for table `testi`
 --
 
-DROP TABLE IF EXISTS `testi`;
+-- DROP TABLE IF EXISTS `testi`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `testi` (
+CREATE TABLE IF NOT EXISTS `testi` (
   `Aika` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `Anturi` mediumint(2) NOT NULL DEFAULT '0',
   `Lampotila` float(4,2) NOT NULL DEFAULT '-99.00',
@@ -69,10 +69,10 @@ CREATE TABLE `testi` (
 -- Table structure for table `tmpmittaukset`
 --
 
-DROP TABLE IF EXISTS `tmpmittaukset`;
+-- DROP TABLE IF EXISTS `tmpmittaukset`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `tmpmittaukset` (
+CREATE TABLE IF NOT EXISTS `tmpmittaukset` (
   `lampotila` float(4,2) DEFAULT NULL,
   `sensorid` char(40) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 PACK_KEYS=1;

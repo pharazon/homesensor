@@ -14,6 +14,7 @@ cd ~/app/composer
 curl -sS https://getcomposer.org/installer | php
 #add composer to your path eg. edit ~/.bashrc and add
 alias composer=~/app/composer/composer.phar
+alias dbpatch=php ~/PATH_TO_HOMESENSOR/vendor/dbpatch/dbpatch/bin/dbpatch.php
 
 Usage 
 git clone https://github.com/pharazon/homesensor.git

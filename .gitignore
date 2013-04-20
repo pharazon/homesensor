@@ -1,3 +1,6 @@
 detector/error_detector.txt
 detector/log_detector.txt
 detector/detector.ini
+db/dbpatch.ini
+composer.lock
+vendor/
