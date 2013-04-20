@@ -1,0 +1,4 @@
+check table Mittaukset;
+check table tmpmittaukset;
+check table Anturit;
+
