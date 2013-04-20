@@ -1,0 +1,15 @@
+{
+    "name": "phz/homesensor",
+    "require": {
+        "dbpatch/dbpatch": "dev-master",
+        "phpunit/phpunit": "3.7.*@dev",
+        "phpunit/php-code-coverage": "1.2.*@dev",
+        "phpunit/php-code-coverage": "1.2.*@dev",
+        "phpunit/phpunit-selenium": "dev-master",
+        "phpunit/phpunit-story": "dev-master"
+    },
+    "config": {
+        "process-timeout": 40000
+    }
+}
+
