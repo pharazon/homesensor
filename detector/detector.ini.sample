@@ -1,0 +1,24 @@
+[ "db" ]
+#MySQL Connection settings
+username = 'homesensor'
+password = 'homesensor'
+name = 'Lampo'
+host = 'localhost'
+
+[ "log" ]
+#Write log to file?
+file = False
+#Write error log to file?
+error = False
+#Print debug messages to stdout?
+debug = False
+#Print info messages to stdout?
+verbose = True
+
+[ "serial" ]
+#Which Serial Device to listen /dev/ttyS0, but please omit the /dev/
+tty = 'ttyS0'
+
+[ "measurement" ]
+#Time to sleep between measurements in seconds. This affects the CPU usage, on low power machines use 10ms, on high power 1ms
+sleep = 0.010
