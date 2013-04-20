@@ -1,0 +1,1 @@
+*/5 * * * * root    /home/homesensor/homesensor/detector/owfs_temp.pl

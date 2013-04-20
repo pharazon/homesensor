@@ -21,7 +21,7 @@ git clone https://github.com/pharazon/homesensor.git
 cd homesensor
 composer update
 
-Setup DB
+===Setup DB===
 
 mysql -u root -p 
 mysql> create database Lampo;
@@ -36,12 +36,17 @@ Query OK, 0 rows affected (0.00 sec)
 mysql> flush privileges;
 Query OK, 0 rows affected (0.08 sec)
 
+
+cd db
+dbpatch update
+
 ===Setup Detector===
 If you are using the electricity power detector
 
 cd homesensor/detector
 cp detector.ini.sample detector.ini
 ln -s PATH_TO_HOME_SENSOR/etc/init.d/homesensor /etc/rc2.d/S99homesensor
+ln -s PATH_TO_HOME_SENSOR/etc/cron.d/homesensor /etc/cron.d/homesensor
 python detector.py
 
 
