@@ -30,8 +30,8 @@ trigger_time = time.time()
 trigger_period = []
 pulse_width = []
 
-file = open("log_detector.txt", "a", 6)
-error_file = open("error_detector.txt", "a", 6)
+#file = open("log_detector.txt", "a", 6)
+#error_file = open("error_detector.txt", "a", 6)
 
 while True:
   level = port.getCTS()
@@ -46,7 +46,7 @@ while True:
 #    count += 1
     pulse_width.append((time.time() - trigger_time))
   old_level = level
-#  time.sleep(0.001)
+  time.sleep(0.010)
   elapsed = (time.time() - start)
   if elapsed > meas_time:
     if count > 0:
@@ -63,7 +63,7 @@ while True:
     print("%.2f edges/second, min: %f avg: %f max: %f" % (edges, min(pulse_width),pulse_avg,max(pulse_width))) 
     #print trigger_period
     timestr = time.strftime("%Y-%m-%d-%H-%M-%S")
-    file.write("%s %f %f %f %f %f %f %f\n" % (timestr, edges, min(pulse_width),pulse_avg,max(pulse_width), min(trigger_period),trigger_avg,max(trigger_period)))
+    #file.write("%s %f %f %f %f %f %f %f\n" % (timestr, edges, min(pulse_width),pulse_avg,max(pulse_width), min(trigger_period),trigger_avg,max(trigger_period)))
 
     t = Thread(target=insert_to_db, args=(time,edges))
     t.start()
@@ -75,7 +75,7 @@ while True:
 
   if (time.time() - loop_time) > 0.001:
     timestr = time.strftime("%Y-%m-%d-%H-%M-%S")
-    error_file.write("%s %f\n" % (timestr,  time.time() - loop_time ))
+    #error_file.write("%s %f\n" % (timestr,  time.time() - loop_time ))
   loop_time = time.time()
 
 
