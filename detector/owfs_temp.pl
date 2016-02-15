@@ -27,11 +27,13 @@ $sensor_count = 0;
 while(@asd = $sth->fetchrow_array) {
 #print $asd[0];
 	open(TEMPERATURE, "/digitemp/" . $asd[0] . "/" . $asd[1]);
-	$str = <TEMPERATURE>;
-	chomp $str;
-	$lampotila[$sensor_count] = trim($str);
-	$sensorid[$sensor_count] = $asd[0];
-	close TEMPERATURE;
+	if (fileno TEMPERATURE) {
+		$str = <TEMPERATURE>;
+		chomp $str;
+		$lampotila[$sensor_count] = trim($str);
+		$sensorid[$sensor_count] = $asd[0];
+		close TEMPERATURE;
+	}
 	$sensor_count++;
 }
 
