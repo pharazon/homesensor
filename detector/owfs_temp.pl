@@ -20,46 +20,30 @@ $dbpasswd = "";
 $dbh = DBI->connect("DBI:mysql:$dbname", $dbuser, $dbpasswd)
     or die "can't connect: $DBI::errstr\n";
 
-$sth = $dbh->prepare("select sensorid,type from Anturit");
+$sth = $dbh->prepare("SELECT sensorid,type,Anturi FROM Anturit");
 $sth->execute() or die "\n";
 
-$sensor_count = 0;
-while(@asd = $sth->fetchrow_array) {
-#print $asd[0];
-	open(TEMPERATURE, "/digitemp/" . $asd[0] . "/" . $asd[1]);
+while(@sensors = $sth->fetchrow_array) {
+	$hardwareId = $sensors[0];
+	$type = $sensors[1];
+	$id = $sensors[2];
+	$value = "";
+	open(TEMPERATURE, "/digitemp/" . $hardwareId . "/" . $type);
 	if (fileno TEMPERATURE) {
 		$str = <TEMPERATURE>;
 		chomp $str;
-		$lampotila[$sensor_count] = trim($str);
-		$sensorid[$sensor_count] = $asd[0];
+		$value = trim($str);
 		close TEMPERATURE;
 	}
-	$sensor_count++;
+#	print($id. " ");
+#	print($value . " ");
+#	print($hardwareId . " \n");
+
+	if ($value) {
+		$query = "INSERT INTO Mittaukset (id,Aika,Anturi,Lampotila) VALUES (0, NOW(), $id, $value)";
+#		print("$query\n");
+		$dbh->do($query);
+	}
 }
-
-
-for ($i=0; $i<$sensor_count; $i++) {
-    #filter out error values
-    if ($sensorid[$i] ne "") { 
-        if ($lampotila[$i] != 85 && $lampotila[$i] ne "") {
-            $query = "INSERT INTO tmpmittaukset values ($lampotila[$i], '" . $sensorid[$i] . "')";
-            $dbh->do($query);
-        }
-    }
-}
-
-$sth = $dbh->prepare("select Anturit.Anturi, tmpmittaukset.lampotila from Anturit, tmpmittaukset
-where tmpmittaukset.sensorid=Anturit.sensorid
-order by Anturit.Anturi");
-$sth->execute()
-	or die "$tuloste\n";
-
-while(@asd= $sth->fetchrow_array) {
-	$query = "insert into Mittaukset (id,Aika,Anturi,Lampotila) values (0, NOW(), $asd[0], $asd[1])";
-	$dbh->do($query)
-		or die "virhe: $DBI::errstr\n Tuloste: $tuloste";
-}
-
-$dbh->do("delete from tmpmittaukset");	
 $dbh->disconnect;
-
+exit(0);
