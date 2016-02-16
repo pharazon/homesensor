@@ -12,8 +12,6 @@ sub trim($)
 	return $string;
 }
 
-my $sensorid;
-my $lampotila;
 $dbname = "Lampo";
 $dbuser = "root";
 $dbpasswd = "";
@@ -39,7 +37,7 @@ while(@sensors = $sth->fetchrow_array) {
 #	print($value . " ");
 #	print($hardwareId . " \n");
 
-	if ($value) {
+	if ($value && $value != 85) {
 		$query = "INSERT INTO Mittaukset (id,Aika,Anturi,Lampotila) VALUES (0, NOW(), $id, $value)";
 #		print("$query\n");
 		$dbh->do($query);
