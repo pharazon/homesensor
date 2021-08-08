@@ -192,7 +192,7 @@ class GNUPlot {
         fwrite($fp, $command);
         passthru("$GNUPLOT $gnuplotfile > $pic_filename");
         fclose($fp);
-        unlink($gnuplotfile);
+        //unlink($gnuplotfile);
     } 
 
     function exe( $command ) {

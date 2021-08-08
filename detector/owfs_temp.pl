@@ -7,9 +7,11 @@ use DBI;
 sub trim($)
 {
 	my $string = shift;
-	$string =~ s/^\s+//;
-	$string =~ s/\s+$//;
-	return $string;
+        if ( defined $string ) {
+		$string =~ s/^\s+//;
+		$string =~ s/\s+$//;
+		return $string;
+	}
 }
 
 $dbname = "Lampo";
@@ -29,8 +31,10 @@ while(@sensors = $sth->fetchrow_array) {
 	open(TEMPERATURE, "/digitemp/" . $hardwareId . "/" . $type);
 	if (fileno TEMPERATURE) {
 		$str = <TEMPERATURE>;
-		chomp $str;
-		$value = trim($str);
+		if (defined $str) {
+			chomp $str;
+			$value = trim($str);
+		}
 		close TEMPERATURE;
 	}
 #	print($id. " ");
